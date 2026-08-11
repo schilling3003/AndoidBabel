@@ -21,6 +21,7 @@ class ModelDownloadViewModel(
     private val _tasks = MutableStateFlow<List<ModelDownloadManager.DownloadTask>>(emptyList())
     val tasks: StateFlow<List<ModelDownloadManager.DownloadTask>> = _tasks
 
+    private val workLiveData = mutableMapOf<UUID, LiveData<WorkInfo>>()
     private val workObservers = mutableMapOf<UUID, Observer<WorkInfo>>()
 
     init {
@@ -47,9 +48,10 @@ class ModelDownloadViewModel(
     }
 
     override fun onCleared() {
-        workObservers.forEach { (id, observer) ->
-            downloadManager.workInfo(id).removeObserver(observer)
+        workLiveData.forEach { (id, liveData) ->
+            workObservers[id]?.let { liveData.removeObserver(it) }
         }
+        workLiveData.clear()
         workObservers.clear()
         super.onCleared()
     }
@@ -57,6 +59,7 @@ class ModelDownloadViewModel(
     private fun observe(workId: UUID) {
         if (workObservers.containsKey(workId)) return
         val liveData: LiveData<WorkInfo> = downloadManager.workInfo(workId)
+        workLiveData[workId] = liveData
         val observer = Observer<WorkInfo> { info ->
             val task = _tasks.value.find { it.workId == workId } ?: return@Observer
             val progress = if (info.progress.keyValueMap.isNotEmpty()) {
