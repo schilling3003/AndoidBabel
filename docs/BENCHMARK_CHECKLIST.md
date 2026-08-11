@@ -20,8 +20,8 @@ Android device and send back the evidence we need to complete the Round 2 gate.
 - A `.litertlm` Gemma 4 E2B translation model file. Relay does not bundle the
   model; see `docs/MODEL_SOURCES.md` for official download links and import it
   through the first-run Storage Access Framework flow.
-- Network access for the very first run so `moonshine-voice` can download the
-  STT/TTS model files, or download them manually using the links in
+- Network access for the very first run so the in-app download manager can fetch
+  the Moonshine STT/TTS model files, or download them manually using the links in
   `docs/MODEL_SOURCES.md`. After the first download, translation is fully offline.
 
 ## Build the release APK
@@ -75,8 +75,13 @@ signing config before distribution.
 1. Put the `.litertlm` file on the device storage (e.g. `Download/`).
 2. Open the **Relay** app.
 3. On **Set up Relay**, tap **Import .litertlm model** and select the file.
-4. Wait for the model to validate and warm. The status changes to ready when
-   the translation engine is loaded.
+4. Wait for the model to validate and warm. When the translation model is ready,
+   the **Voice models** card appears.
+5. Tap **Download all** to pre-fetch English and Spanish STT/TTS assets, or skip
+   the downloads and let the app fetch them automatically on first use.
+
+6. Wait for downloads to show **Downloaded** before the first turn (optional but
+   gives the cleanest latency measurement).
 
 ## Run the English ↔ Spanish vertical slice
 
@@ -143,5 +148,5 @@ Open a PR comment or issue with:
 - Gemma `.litertlm` file name / source.
 - Any crashes, wrong translations, missing audio, or UI problems.
 
-We will use this evidence to update `docs/GAUNTLET_STATE.md`, score Round 2, and
+We will use this evidence to update `docs/GAUNTLET_STATE.md`, score Round 3, and
 plan the next track.
