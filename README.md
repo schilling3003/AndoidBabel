@@ -5,9 +5,10 @@ Built with Kotlin, Jetpack Compose, and coroutines/Flow. The architecture keeps
 speech recognition, translation, and speech synthesis behind narrow interfaces
 so real engines can be swapped in without changing the UI.
 
-> **Current status:** Round 1 complete. The project builds, passes unit tests,
-> and runs a UI-only vertical slice with deterministic fake engines. Real
-> LiteRT-LM (Gemma) and Moonshine Voice integration is the next gauntlet round.
+> **Current status:** Round 2 in progress. The project builds, passes unit tests,
+> and wires real LiteRT-LM (Gemma) and Moonshine Voice STT/TTS engine adapters.
+> The UI-only vertical slice with deterministic fakes is complete; the next step
+> is end-to-end English ↔ Spanish on a physical device with real model assets.
 
 ## Supported languages
 
@@ -26,7 +27,7 @@ The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 
 - `app/src/main/java/com/schilling3003/relay/domain/` — models and state
 - `app/src/main/java/com/schilling3003/relay/engines/` — engine interfaces and
-  fake implementations
+  fake and real implementations (`litert/`, `moonshine/`)
 - `app/src/main/java/com/schilling3003/relay/viewmodel/` — `ConversationViewModel`
 - `app/src/main/java/com/schilling3003/relay/ui/` — Jetpack Compose screens
 - `app/src/main/java/com/schilling3003/relay/audio/` — audio recorder/player
@@ -42,26 +43,36 @@ The app does not bundle the Gemma model. On first launch it prompts for a
 copied into app-private storage and validated before the conversation UI is
 shown.
 
+Moonshine STT/TTS language models are downloaded on first use (explicit,
+background, one-time) to avoid bundling large assets. Once downloaded, all
+inference is on-device.
+
 ## Offline and privacy
 
-- Only `RECORD_AUDIO` is declared in the manifest. No `INTERNET` permission, no
-  analytics, no cloud inference, and no transcript logging in the current
-  codebase.
-- All inference runs on-device after the model is imported.
+- `RECORD_AUDIO` is requested at runtime for microphone capture.
+- The `moonshine-voice` dependency declares `INTERNET`/`ACCESS_NETWORK_STATE`
+  so it can download language models on demand. No network is used during
+  translation or synthesis, and the app does not send transcripts or audio
+  to a server.
+- No analytics or transcript logging in the current codebase.
+- All inference runs on-device after models are present.
 
-## Known limitations (Round 1)
+## Known limitations (Round 2)
 
-- Real LiteRT-LM and Moonshine Voice artifacts are pinned in the version catalog
-  but not yet wired to the UI; the first vertical slice uses deterministic fakes.
-- No on-device STT/TTS/translation yet.
-- Release signing config and arm64 release APK are future gauntlet steps.
+- Real engine adapters compile but have not been exercised end-to-end with
+  a `.litertlm` Gemma model and Moonshine STT/TTS model files on a device.
+- Translation output parsing uses `Message.toString()`; it may need a structured
+  response format once the model is available.
+- Runtime `RECORD_AUDIO` permission is requested at startup; a dedicated
+  permission-rationale screen may be added later.
+- Release signing config, R8/ProGuard rules, and arm64 release APK are future
+  gauntlet steps.
 
 ## Next steps
 
-1. Resolve Kotlin/Compose/LiteRT-LM version compatibility on a reference
-   device.
-2. Wire real `LocalModelManager` → LiteRT-LM → Moonshine pipeline for
-   English ↔ Spanish.
+1. Obtain/confirm a compatible `.litertlm` Gemma 4 E2B model and Moonshine
+   STT/TTS model files for English and Spanish.
+2. Run the English ↔ Spanish vertical slice on a physical reference device.
 3. Add remaining languages with RTL and script-specific validation.
 4. Add performance instrumentation and produce a signed arm64 release APK.
 

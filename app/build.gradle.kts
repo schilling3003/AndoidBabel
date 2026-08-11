@@ -44,8 +44,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
     }
 
     buildFeatures {
@@ -89,13 +91,10 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.security.crypto)
 
-    // Speech / translation engines are pinned in the version catalog. Real engine
-    // artifacts are wired only after the fake-engine UI vertical slice passes the
-    // gauntlet; keeping them out of the first build avoids Kotlin/Compose compiler
-    // version coupling and lets screenshot tests run without multi-gigabyte assets.
-    // TODO: enable once real engine compatibility is verified on a reference device.
-    // implementation(libs.litertlm.android)
-    // implementation(libs.moonshine.voice)
+    // Speech / translation engines. Real artifacts are enabled now that the UI
+    // vertical slice and state machine pass the gauntlet.
+    implementation(libs.litertlm.android)
+    implementation(libs.moonshine.voice)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

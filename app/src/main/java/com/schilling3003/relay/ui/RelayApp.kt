@@ -13,7 +13,7 @@ import com.schilling3003.relay.viewmodel.SetupViewModel
  * Root Compose entry point. Switches between setup and conversation surfaces.
  */
 @Composable
-fun RelayApp() {
+fun RelayApp(recordPermissionGranted: Boolean = false) {
     val app = RelayApplication.instance
     val setupViewModel: SetupViewModel = viewModel(
         factory = SetupViewModel.Factory(app.modelManager)

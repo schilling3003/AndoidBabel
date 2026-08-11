@@ -3,8 +3,10 @@ package com.schilling3003.relay
 import android.app.Application
 import com.schilling3003.relay.audio.AudioPlayer
 import com.schilling3003.relay.audio.AudioRecorder
+import com.schilling3003.relay.audio.AudioTrackAudioPlayer
 import com.schilling3003.relay.audio.FakeAudioPlayer
 import com.schilling3003.relay.audio.FakeAudioRecorder
+import com.schilling3003.relay.audio.RealAudioRecorder
 import com.schilling3003.relay.engines.ModelManager
 import com.schilling3003.relay.engines.PerformanceRecorder
 import com.schilling3003.relay.engines.SpeechRecognizer
@@ -15,6 +17,9 @@ import com.schilling3003.relay.engines.fake.FakePerformanceRecorder
 import com.schilling3003.relay.engines.fake.FakeSpeechRecognizer
 import com.schilling3003.relay.engines.fake.FakeSpeechSynthesizer
 import com.schilling3003.relay.engines.fake.FakeTranslationEngine
+import com.schilling3003.relay.engines.litert.GemmaTranslationEngine
+import com.schilling3003.relay.engines.moonshine.MoonshineSpeechRecognizer
+import com.schilling3003.relay.engines.moonshine.MoonshineSpeechSynthesizer
 import com.schilling3003.relay.storage.LocalModelManager
 
 /**
@@ -39,8 +44,11 @@ class RelayApplication : Application() {
     lateinit var performanceRecorder: PerformanceRecorder
         private set
 
-    /** Switch to true to exercise fake engines during UI-only gauntlet rounds. */
-    val useFakeEngines: Boolean = true
+    /**
+     * Set to true for UI-only gauntlet rounds that do not require real model
+     * assets. The release build uses real engines.
+     */
+    val useFakeEngines: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
@@ -58,14 +66,12 @@ class RelayApplication : Application() {
             audioPlayer = FakeAudioPlayer()
             performanceRecorder = FakePerformanceRecorder()
         } else {
-            // TODO: wire real Moonshine/LiteRT-LM implementations once the vertical slice
-            // has passed UI and state-machine gates.
             modelManager = LocalModelManager(this)
-            speechRecognizer = FakeSpeechRecognizer()
-            translationEngine = FakeTranslationEngine()
-            speechSynthesizer = FakeSpeechSynthesizer()
-            audioRecorder = FakeAudioRecorder()
-            audioPlayer = FakeAudioPlayer()
+            audioPlayer = AudioTrackAudioPlayer()
+            speechRecognizer = MoonshineSpeechRecognizer(this)
+            translationEngine = GemmaTranslationEngine(this, modelManager)
+            speechSynthesizer = MoonshineSpeechSynthesizer(this, audioPlayer)
+            audioRecorder = RealAudioRecorder(this)
             performanceRecorder = FakePerformanceRecorder()
         }
     }
