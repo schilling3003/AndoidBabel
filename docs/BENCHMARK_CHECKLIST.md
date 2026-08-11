@@ -18,10 +18,11 @@ Android device and send back the evidence we need to complete the Round 2 gate.
   recommended for Gemma 4 E2B.
 - USB debugging enabled and `adb` available on your computer.
 - A `.litertlm` Gemma 4 E2B translation model file. Relay does not bundle the
-  model; you must obtain a compatible file separately and import it through the
-  first-run Storage Access Framework flow.
+  model; see `docs/MODEL_SOURCES.md` for official download links and import it
+  through the first-run Storage Access Framework flow.
 - Network access for the very first run so `moonshine-voice` can download the
-  STT/TTS model files. After that, translation is fully offline.
+  STT/TTS model files, or download them manually using the links in
+  `docs/MODEL_SOURCES.md`. After the first download, translation is fully offline.
 
 ## Build the release APK
 
@@ -38,8 +39,9 @@ The output is:
 app/build/outputs/apk/release/app-release.apk
 ```
 
-This APK is built for `arm64-v8a` only and is unsigned. You can install it with
-`adb` for development testing.
+This APK is built for `arm64-v8a` only and is signed with the debug keystore so
+it installs by tapping or with `adb install`. Replace with a proper release
+signing config before distribution.
 
 ## Install and prepare
 
