@@ -12,6 +12,7 @@ import com.schilling3003.relay.engines.PerformanceRecorder
 import com.schilling3003.relay.engines.SpeechRecognizer
 import com.schilling3003.relay.engines.SpeechSynthesizer
 import com.schilling3003.relay.engines.TranslationEngine
+import com.schilling3003.relay.engines.moonshine.ModelDownloadManager
 import com.schilling3003.relay.engines.fake.FakeModelManager
 import com.schilling3003.relay.engines.fake.FakePerformanceRecorder
 import com.schilling3003.relay.engines.fake.FakeSpeechRecognizer
@@ -44,6 +45,8 @@ class RelayApplication : Application() {
         private set
     lateinit var performanceRecorder: PerformanceRecorder
         private set
+    lateinit var modelDownloader: ModelDownloadManager
+        private set
 
     /**
      * Set to true for UI-only gauntlet rounds that do not require real model
@@ -66,6 +69,7 @@ class RelayApplication : Application() {
             audioRecorder = FakeAudioRecorder()
             audioPlayer = FakeAudioPlayer()
             performanceRecorder = FakePerformanceRecorder()
+            modelDownloader = ModelDownloadManager(this)
         } else {
             modelManager = LocalModelManager(this)
             audioPlayer = AudioTrackAudioPlayer()
@@ -74,6 +78,7 @@ class RelayApplication : Application() {
             speechSynthesizer = MoonshineSpeechSynthesizer(this, audioPlayer)
             audioRecorder = RealAudioRecorder(this)
             performanceRecorder = FilePerformanceRecorder(this)
+            modelDownloader = ModelDownloadManager(this)
         }
     }
 

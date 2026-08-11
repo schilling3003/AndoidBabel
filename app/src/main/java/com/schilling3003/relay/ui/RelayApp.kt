@@ -7,6 +7,7 @@ import com.schilling3003.relay.ui.conversation.ConversationScreen
 import com.schilling3003.relay.ui.setup.SetupScreen
 import com.schilling3003.relay.ui.theme.RelayTheme
 import com.schilling3003.relay.viewmodel.ConversationViewModel
+import com.schilling3003.relay.viewmodel.ModelDownloadViewModel
 import com.schilling3003.relay.viewmodel.SetupViewModel
 
 /**
@@ -17,6 +18,9 @@ fun RelayApp(recordPermissionGranted: Boolean = false) {
     val app = RelayApplication.instance
     val setupViewModel: SetupViewModel = viewModel(
         factory = SetupViewModel.Factory(app.modelManager)
+    )
+    val downloadViewModel: ModelDownloadViewModel = viewModel(
+        factory = ModelDownloadViewModel.Factory(app.modelDownloader)
     )
     val conversationViewModel: ConversationViewModel = viewModel(
         factory = ConversationViewModel.Factory(
@@ -34,6 +38,7 @@ fun RelayApp(recordPermissionGranted: Boolean = false) {
         if (setupViewModel.shouldShowSetup.value) {
             SetupScreen(
                 viewModel = setupViewModel,
+                downloadViewModel = downloadViewModel,
                 onSetupComplete = { setupViewModel.dismissSetup() }
             )
         } else {

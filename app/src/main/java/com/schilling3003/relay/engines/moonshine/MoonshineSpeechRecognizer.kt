@@ -30,7 +30,6 @@ import kotlin.coroutines.cancellation.CancellationException
  */
 class MoonshineSpeechRecognizer(
     private val context: android.content.Context,
-    private val modelArch: Int = JNI.MOONSHINE_MODEL_ARCH_TINY,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SpeechRecognizer {
 
@@ -40,6 +39,7 @@ class MoonshineSpeechRecognizer(
     private val lock = Mutex()
     private val transcriber = Transcriber()
     private var loadedLanguage: String? = null
+    private var loadedModelArch: Int = JNI.MOONSHINE_MODEL_ARCH_TINY
 
     override fun partials(): Flow<PartialTranscript> = emptyFlow()
 
@@ -68,7 +68,8 @@ class MoonshineSpeechRecognizer(
     private suspend fun ensureLoaded(language: Language) {
         val code = language.code
         lock.withLock {
-            if (loadedLanguage == code && transcriber.isLoaded) {
+            val arch = ModelDownloadManager.defaultSttModelArch(language)
+            if (loadedLanguage == code && loadedModelArch == arch && transcriber.isLoaded) {
                 _readiness.value = EngineReadiness.Ready
                 return
             }
@@ -78,12 +79,13 @@ class MoonshineSpeechRecognizer(
                 val modelDir = File(context.filesDir, "moonshine/stt/$code").apply { mkdirs() }
                 val root = AssetDownloader().ensureModelPresent(
                     modelDir,
-                    ModelSpec.stt(code),
+                    ModelSpec.stt(code, arch, false),
                     null
                 )
                 transcriber.close()
-                transcriber.loadFromFiles(root.absolutePath, modelArch)
+                transcriber.loadFromFiles(root.absolutePath, arch)
                 loadedLanguage = code
+                loadedModelArch = arch
                 _readiness.value = EngineReadiness.Ready
             } catch (e: CancellationException) {
                 throw e

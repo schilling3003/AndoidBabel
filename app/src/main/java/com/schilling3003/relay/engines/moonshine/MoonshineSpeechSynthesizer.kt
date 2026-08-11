@@ -29,7 +29,7 @@ import kotlin.coroutines.cancellation.CancellationException
 class MoonshineSpeechSynthesizer(
     private val context: android.content.Context,
     private val audioPlayer: AudioPlayer,
-    private val voice: String = "female",
+    private val voice: String = "",
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : SpeechSynthesizer {
 
@@ -42,6 +42,7 @@ class MoonshineSpeechSynthesizer(
     private val lock = Mutex()
     private val textToSpeech = TextToSpeech(context)
     private var loadedLanguage: String? = null
+    private var loadedVoice: String? = null
 
     override suspend fun speak(text: String, language: Language) {
         withContext(dispatcher) {
@@ -74,8 +75,9 @@ class MoonshineSpeechSynthesizer(
 
     private suspend fun ensureLoaded(language: Language) {
         val code = language.code
+        val selectedVoice = voice.takeIf { it.isNotBlank() } ?: ModelDownloadManager.defaultVoice(language)
         lock.withLock {
-            if (loadedLanguage == code && textToSpeech.isLoaded) {
+            if (loadedLanguage == code && loadedVoice == selectedVoice && textToSpeech.isLoaded) {
                 _readiness.value = EngineReadiness.Ready
                 return
             }
@@ -85,12 +87,13 @@ class MoonshineSpeechSynthesizer(
                 val modelDir = File(context.filesDir, "moonshine/tts/$code").apply { mkdirs() }
                 val root = AssetDownloader().ensureModelPresent(
                     modelDir,
-                    ModelSpec.tts(code, voice),
+                    ModelSpec.tts(code, selectedVoice),
                     null
                 )
                 textToSpeech.close()
-                textToSpeech.modelsFrom(root).language(code).voice(voice).load()
+                textToSpeech.modelsFrom(root).language(code).voice(selectedVoice).load()
                 loadedLanguage = code
+                loadedVoice = selectedVoice
                 _readiness.value = EngineReadiness.Ready
             } catch (e: CancellationException) {
                 throw e

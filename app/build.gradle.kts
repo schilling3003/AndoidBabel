@@ -116,6 +116,8 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.datastore.preferences)
     implementation(libs.security.crypto)
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.compose.runtime.livedata)
 
     // Speech / translation engines. Real artifacts are enabled now that the UI
     // vertical slice and state machine pass the gauntlet.

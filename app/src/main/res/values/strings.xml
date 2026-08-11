@@ -11,6 +11,16 @@
     <string name="setup_select_languages">Choose languages</string>
     <string name="setup_warm_engines">Preparing translator…</string>
     <string name="setup_ready">Ready to translate</string>
+    <string name="setup_voice_models_title">Voice models</string>
+    <string name="setup_voice_models_subtitle">Download speech-to-text and text-to-speech data for English and Spanish. You can also download these automatically on first use.</string>
+    <string name="setup_download_all">Download all</string>
+    <string name="setup_download">Download</string>
+    <string name="setup_refresh">Refresh</string>
+    <string name="setup_downloaded">Downloaded</string>
+    <string name="setup_downloading">Downloading…</string>
+    <string name="setup_pending">Pending</string>
+    <string name="setup_error">Error</string>
+    <string name="setup_skip_downloads">Skip — download later</string>
     <string name="setup_error_incompatible_model">The selected file is not a compatible .litertlm model.</string>
     <string name="setup_error_storage">Not enough free storage to copy the model.</string>
     <string name="setup_error_copy">Could not copy the model. Keep the original file and try again.</string>

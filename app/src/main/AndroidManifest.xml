@@ -5,9 +5,10 @@
     <!-- Microphone is required for the push-to-talk conversation path. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- Optional: used only if an explicit resumable downloader is added later.
-         Not requested in v1 because the core promise is fully offline after setup. -->
-    <!-- <uses-permission android:name="android.permission.INTERNET" /> -->
+    <!-- Used only for the optional first-time model download. Inference never
+         uses the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:name=".RelayApplication"
