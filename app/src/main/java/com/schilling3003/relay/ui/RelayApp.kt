@@ -37,7 +37,10 @@ fun RelayApp(recordPermissionGranted: Boolean = false) {
                 onSetupComplete = { setupViewModel.dismissSetup() }
             )
         } else {
-            ConversationScreen(viewModel = conversationViewModel)
+            ConversationScreen(
+                viewModel = conversationViewModel,
+                recordPermissionGranted = recordPermissionGranted
+            )
         }
     }
 }

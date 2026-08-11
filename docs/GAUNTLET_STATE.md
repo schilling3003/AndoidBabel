@@ -5,12 +5,12 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 
 ## Current status
 
-- Phase: Round 2 in progress — real engine adapters wired, build/lint/unit tests green
+- Phase: Round 2 in progress — real engine adapters wired, build/lint/unit tests green, emulator smoke test passed
 - Commit under evaluation: latest on `devin/round1-scaffold-ui`
-- Overall evidence-backed score: not rated / 100 (real engines compile but no
-  physical-device or model-asset measurements yet)
-- Release gates: Build gate passes debug with real engine artifacts; remaining
-  gates blocked by missing model assets and physical reference device
+- Overall evidence-backed score: not rated / 100 (real engines compile and launch
+  on an x86_64 emulator, but no physical-device or model-asset measurements yet)
+- Release gates: Build and launch smoke-test gates pass with real engine artifacts;
+  remaining gates blocked by missing model assets and physical reference device
 - Physical reference device: not selected
 - Current highest-impact gap: end-to-end English ↔ Spanish vertical slice with real
   STT/Gemma/TTS on a physical device, requiring `.litertlm` and Moonshine model files
@@ -43,7 +43,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | Build | Passes debug with real engine artifacts | `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleDebug` all green with `litertlm-android` and `moonshine-voice` enabled | Release build and APK signing config; R8/ProGuard rules for native engines |
 | Offline | Not run | — | Real engines + model import on a device |
 | Privacy | Reviewed | Manifest has `RECORD_AUDIO`; `moonshine-voice` AAR declares `INTERNET`/`ACCESS_NETWORK_STATE` for explicit on-demand model downloads. No telemetry, analytics, or transcript logging. Translation is on-device. | Verify no network path is used during inference; document downloader behavior |
-| Core journey | Real engine adapters wired and compile; UI journey verified with fake engines on android-34 x86_64 emulator | `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder` integrated behind stable interfaces; state machine unchanged | Real `.litertlm` + Moonshine STT/TTS model files on a physical device for English ↔ Spanish two-turn test |
+| Core journey | Real engine adapters wired and launch without crash on android-34 x86_64 emulator; UI journey verified with fake engines on the same emulator | `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder` integrated behind stable interfaces; smoke test confirms cold-start, `RECORD_AUDIO` permission dialog, and landing on *Set up Relay* with no crash; state machine unchanged | Real `.litertlm` + Moonshine STT/TTS model files on a physical device for English ↔ Spanish two-turn test |
 | Stability | Partial | Unit tests cover state transitions, cancellation, swap-while-recording, turn accumulation | Soak, lifecycle, rotation, process-death tests on device |
 | Accessibility | Partial | Compose semantics on speak button, role/Button, content descriptions, large-text-safe scrollable layouts | TalkBack script, contrast checker, RTL/device screenshot suite |
 | Correctness | Partial | `LanguageTest` covers direction/script/defaults; `ConversationViewModelTest` covers pipeline | Real translation corpus, parser tests, malformed-output recovery |
@@ -55,7 +55,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | Round | Commit | Focus | Before | After | Evidence | Critic verdict |
 | ---: | --- | --- | ---: | ---: | --- | --- |
 | 1 | (this PR) | Reproducible build, fake-engine UI vertical slice, state-machine tests, emulator e2e fixes | 0 | not rated | Build/lint/unit tests green; debug APK produced; end-to-end emulator run verified default conversation, English→Spanish turn, swap, and tabletop mode after fixing BigSpeakButton press/release and setup routing | passed testing agent; pending independent critic review |
-| 2 | (this PR) | Real LiteRT-LM/Moonshine engine integration | not rated | not rated | Kotlin 2.3.0/Compose compiler 2.3.0 resolve metadata mismatch; `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder` wired; build/lint/unit tests green | compiled; no model-asset or device evidence yet |
+| 2 | (this PR) | Real LiteRT-LM/Moonshine engine integration and emulator smoke test | not rated | not rated | Kotlin 2.3.0/Compose compiler 2.3.0 resolve metadata mismatch; `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder` wired; build/lint/unit tests green; smoke test on `android-34` x86_64 emulator shows cold-start, permission dialog, and *Set up Relay* with no crash | compiled and launched; end-to-end English ↔ Spanish still blocked by missing model assets and physical device |
 
 ## Current benchmark summary
 

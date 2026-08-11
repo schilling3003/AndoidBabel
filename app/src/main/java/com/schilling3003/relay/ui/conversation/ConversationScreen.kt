@@ -51,7 +51,10 @@ import com.schilling3003.relay.domain.LayoutDirection as RelayLayoutDirection
 import com.schilling3003.relay.viewmodel.ConversationViewModel
 
 @Composable
-fun ConversationScreen(viewModel: ConversationViewModel) {
+fun ConversationScreen(
+    viewModel: ConversationViewModel,
+    recordPermissionGranted: Boolean = true
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val source by viewModel.sourceLanguage
     val target by viewModel.targetLanguage
@@ -71,12 +74,18 @@ fun ConversationScreen(viewModel: ConversationViewModel) {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                if (tabletop) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    if (!recordPermissionGranted) {
+                        RecordAudioPermissionBanner()
+                    }
+                    if (tabletop) {
                     TabletopLayout(
                         source = source,
                         target = target,
                         state = state,
                         turns = turns,
+                        modifier = Modifier.weight(1f),
+                        recordPermissionGranted = recordPermissionGranted,
                         onSourceSpeak = { viewModel.startRecording() },
                         onSourceRelease = { viewModel.stopRecording() },
                         onTargetSpeak = { viewModel.swapLanguages(); viewModel.startRecording() },
@@ -93,6 +102,8 @@ fun ConversationScreen(viewModel: ConversationViewModel) {
                         target = target,
                         state = state,
                         turns = turns,
+                        modifier = Modifier.weight(1f),
+                        recordPermissionGranted = recordPermissionGranted,
                         onSpeakPress = { viewModel.startRecording() },
                         onSpeakRelease = { viewModel.stopRecording() },
                         onSwap = { viewModel.swapLanguages() },
@@ -106,6 +117,7 @@ fun ConversationScreen(viewModel: ConversationViewModel) {
         }
     }
 }
+}
 
 @Composable
 private fun PortraitLayout(
@@ -113,6 +125,8 @@ private fun PortraitLayout(
     target: Language,
     state: ConversationState,
     turns: List<ConversationTurn>,
+    recordPermissionGranted: Boolean = true,
+    modifier: Modifier = Modifier,
     onSpeakPress: () -> Unit,
     onSpeakRelease: () -> Unit,
     onSwap: () -> Unit,
@@ -122,7 +136,7 @@ private fun PortraitLayout(
     onRetry: () -> Unit
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .verticalScroll(rememberScrollState()),
@@ -150,6 +164,7 @@ private fun PortraitLayout(
         BigSpeakButton(
             source = source,
             state = state,
+            permissionGranted = recordPermissionGranted,
             onPress = onSpeakPress,
             onRelease = onSpeakRelease
         )
@@ -162,6 +177,8 @@ private fun TabletopLayout(
     target: Language,
     state: ConversationState,
     turns: List<ConversationTurn>,
+    recordPermissionGranted: Boolean = true,
+    modifier: Modifier = Modifier,
     onSourceSpeak: () -> Unit,
     onSourceRelease: () -> Unit,
     onTargetSpeak: () -> Unit,
@@ -172,12 +189,13 @@ private fun TabletopLayout(
     onReplay: () -> Unit,
     onRetry: () -> Unit
 ) {
-    Row(modifier = Modifier.fillMaxSize()) {
+    Row(modifier = modifier.fillMaxSize()) {
         SpeakerZone(
             language = source,
             isLeft = true,
             state = state,
             turn = turns.lastOrNull { it.sourceLanguage == source },
+            recordPermissionGranted = recordPermissionGranted,
             onPress = onSourceSpeak,
             onRelease = onSourceRelease,
             modifier = Modifier.weight(1f)
@@ -215,6 +233,7 @@ private fun TabletopLayout(
             isLeft = false,
             state = state,
             turn = turns.lastOrNull { it.targetLanguage == target },
+            recordPermissionGranted = recordPermissionGranted,
             onPress = onTargetSpeak,
             onRelease = onTargetRelease,
             modifier = Modifier.weight(1f)
@@ -406,6 +425,7 @@ private fun TurnCard(turn: ConversationTurn) {
 private fun BigSpeakButton(
     source: Language,
     state: ConversationState,
+    permissionGranted: Boolean = true,
     onPress: () -> Unit,
     onRelease: () -> Unit
 ) {
@@ -415,7 +435,7 @@ private fun BigSpeakButton(
         else -> stringResource(R.string.conversation_hold_to_speak)
     }
     val a11y = stringResource(R.string.a11y_speak_button, source.displayName)
-    val enabled = state is ConversationState.Ready || state is ConversationState.Recording
+    val enabled = (state is ConversationState.Ready || state is ConversationState.Recording) && permissionGranted
 
     val currentEnabled by rememberUpdatedState(enabled)
     val currentOnPress by rememberUpdatedState(onPress)
@@ -471,6 +491,7 @@ private fun SpeakerZone(
     isLeft: Boolean,
     state: ConversationState,
     turn: ConversationTurn?,
+    recordPermissionGranted: Boolean = true,
     onPress: () -> Unit,
     onRelease: () -> Unit,
     modifier: Modifier = Modifier
@@ -504,6 +525,7 @@ private fun SpeakerZone(
         BigSpeakButton(
             source = language,
             state = if (isLeft && state is ConversationState.Recording) state else ConversationState.Ready(language, language),
+            permissionGranted = recordPermissionGranted,
             onPress = onPress,
             onRelease = onRelease
         )
@@ -530,3 +552,18 @@ private fun StatusText(state: ConversationState) {
 }
 
 private fun Language.displayName(): String = this.displayName
+
+@Composable
+private fun RecordAudioPermissionBanner() {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = "Microphone permission is required to translate by voice.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+    }
+}
