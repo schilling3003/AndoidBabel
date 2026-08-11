@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,12 +26,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -416,17 +417,34 @@ private fun BigSpeakButton(
     val a11y = stringResource(R.string.a11y_speak_button, source.displayName)
     val enabled = state is ConversationState.Ready || state is ConversationState.Recording
 
-    Button(
-        onClick = { /* hold gesture handled below */ },
+    val currentEnabled by rememberUpdatedState(enabled)
+    val currentOnPress by rememberUpdatedState(onPress)
+    val currentOnRelease by rememberUpdatedState(onRelease)
+
+    val containerColor = if (isRecording) {
+        MaterialTheme.colorScheme.tertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.primaryContainer
+    }
+    val contentColor = if (isRecording) {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    }
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .height(88.dp)
+            .alpha(if (enabled) 1f else 0.38f)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = {
-                        if (enabled) onPress()
-                        tryAwaitRelease()
-                        if (isRecording) onRelease()
+                        if (!currentEnabled) return@detectTapGestures
+                        currentOnPress()
+                        if (tryAwaitRelease()) {
+                            currentOnRelease()
+                        }
                     }
                 )
             }
@@ -434,7 +452,9 @@ private fun BigSpeakButton(
                 contentDescription = a11y
                 role = Role.Button
             },
-        enabled = enabled
+        shape = MaterialTheme.shapes.extraLarge,
+        color = containerColor,
+        contentColor = contentColor
     ) {
         Box(
             modifier = Modifier.fillMaxSize(),

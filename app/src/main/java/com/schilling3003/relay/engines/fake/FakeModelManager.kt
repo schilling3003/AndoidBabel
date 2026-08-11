@@ -18,7 +18,11 @@ import kotlin.time.Duration.Companion.milliseconds
 class FakeModelManager(
     private val modelSizeBytes: Long = 4_500_000_000L,
     private val importDurationMs: Long = 800L,
-    initialState: ModelState = ModelState.Missing
+    initialState: ModelState = ModelState.Ready(
+        path = "fake:///gemma-4-e2b-it.litertlm",
+        modelId = "gemma-4-E2B-it",
+        sizeBytes = 4_500_000_000L
+    )
 ) : ModelManager {
 
     private val _state = MutableStateFlow<ModelState>(initialState)

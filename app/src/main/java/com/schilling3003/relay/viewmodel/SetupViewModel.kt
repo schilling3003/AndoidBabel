@@ -15,18 +15,26 @@ import kotlinx.coroutines.launch
 
 class SetupViewModel(private val modelManager: ModelManager) : ViewModel() {
 
-    private val _modelState = mutableStateOf<ModelState>(ModelState.Missing)
+    private val _modelState = mutableStateOf<ModelState>(modelManager.state.value)
     val modelState: State<ModelState> = _modelState
 
     private val _importError = mutableStateOf<ModelError?>(null)
     val importError: State<ModelError?> = _importError
 
-    private val _shouldShowSetup = mutableStateOf(true)
+    private val _shouldShowSetup = mutableStateOf(modelManager.state.value !is ModelState.Ready)
     val shouldShowSetup: State<Boolean> = _shouldShowSetup
 
     init {
         viewModelScope.launch {
-            modelManager.state.collectLatest { _modelState.value = it }
+            modelManager.state.collectLatest {
+                _modelState.value = it
+                when (it) {
+                    is ModelState.Ready -> _shouldShowSetup.value = false
+                    is ModelState.Missing -> _shouldShowSetup.value = true
+                    is ModelState.Error -> _shouldShowSetup.value = true
+                    else -> { /* preserve current visibility during import/validation */ }
+                }
+            }
         }
     }
 
