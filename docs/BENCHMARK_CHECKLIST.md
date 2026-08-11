@@ -5,7 +5,7 @@ Android device and send back the evidence we need to complete the Round 2 gate.
 
 ## What you will produce
 
-1. The `app-release-unsigned.apk` from this branch installed on a physical phone.
+1. The `app-release.apk` from this branch installed on a physical phone.
 2. A pulled `relay_benchmark_latest.json` file after several conversation turns.
 3. A `logcat` capture during the test run.
 4. A short note with device model, SoC, Android version, and the `.litertlm` file
@@ -35,7 +35,7 @@ export ANDROID_HOME=/path/to/Android/Sdk
 The output is:
 
 ```
-app/build/outputs/apk/release/app-release-unsigned.apk
+app/build/outputs/apk/release/app-release.apk
 ```
 
 This APK is built for `arm64-v8a` only and is unsigned. You can install it with
@@ -52,7 +52,7 @@ This APK is built for `arm64-v8a` only and is unsigned. You can install it with
 2. Install the APK:
 
    ```bash
-   adb install -r app/build/outputs/apk/release/app-release-unsigned.apk
+   adb install -r app/build/outputs/apk/release/app-release.apk
    ```
 
 3. Grant microphone permission:

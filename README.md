@@ -30,8 +30,10 @@ The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
 ./gradlew :app:assembleRelease
 ```
 
-The release APK is written to `app/build/outputs/apk/release/app-release-unsigned.apk`
-and contains only `arm64-v8a` native libraries.
+The release APK is written to `app/build/outputs/apk/release/app-release.apk`
+and contains only `arm64-v8a` native libraries. It is signed with the debug
+keystore for device testing; replace with a proper release signing config
+before distribution.
 
 ## Project structure
 

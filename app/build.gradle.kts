@@ -37,9 +37,10 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = false
-            // Unsigned release APK. The product spec requires an unsigned or locally
-            // signed arm64 release APK; do not commit a signing config.
-            signingConfig = null
+            // Locally signed with the debug keystore for device testing. This is
+            // not a release signing config; replace with a proper release keystore
+            // before distribution.
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
