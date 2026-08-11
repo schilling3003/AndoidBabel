@@ -1,0 +1,158 @@
+package com.schilling3003.relay.ui.setup
+
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.schilling3003.relay.R
+import com.schilling3003.relay.domain.ModelError
+import com.schilling3003.relay.domain.ModelState
+import com.schilling3003.relay.viewmodel.SetupViewModel
+
+@Composable
+fun SetupScreen(
+    viewModel: SetupViewModel,
+    onSetupComplete: () -> Unit
+) {
+    val modelState by viewModel.modelState
+    val importError by viewModel.importError
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.importModel(it) }
+    }
+
+    Scaffold { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp, alignment = Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = stringResource(R.string.setup_title),
+                style = MaterialTheme.typography.headlineLarge
+            )
+
+            ModelStatusCard(modelState)
+
+            Text(
+                text = stringResource(R.string.setup_model_requirements),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Button(
+                onClick = { launcher.launch("*/*") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                enabled = modelState !is ModelState.Importing && modelState !is ModelState.Validating
+            ) {
+                Text(text = stringResource(R.string.setup_import_model))
+            }
+
+            if (modelState is ModelState.Ready) {
+                Button(
+                    onClick = onSetupComplete,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                ) {
+                    Text(text = stringResource(R.string.setup_ready))
+                }
+            }
+
+            if (modelState is ModelState.Ready) {
+                TextButton(onClick = { viewModel.removeModel() }) {
+                    Text(text = stringResource(R.string.settings_remove_model))
+                }
+            }
+
+            importError?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error.userMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.semantics {
+                        contentDescription = error.userMessage
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModelStatusCard(state: ModelState) {
+    val title = when (state) {
+        is ModelState.Missing -> stringResource(R.string.setup_model_missing)
+        is ModelState.Ready -> stringResource(R.string.setup_model_ready)
+        is ModelState.Importing -> state.stage
+        is ModelState.Validating -> stringResource(R.string.setup_warm_engines)
+        is ModelState.Error -> state.reason.userMessage
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            when (state) {
+                is ModelState.Importing -> {
+                    LinearProgressIndicator(
+                        progress = { state.bytesCopied.toFloat() / state.totalBytes.toFloat() },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                is ModelState.Validating -> CircularProgressIndicator()
+                else -> {}
+            }
+        }
+    }
+}
+
