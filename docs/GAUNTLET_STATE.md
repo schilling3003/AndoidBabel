@@ -5,23 +5,19 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 
 ## Current status
 
-- Phase: Round 3 in progress — model download UI added, official STT/TTS/Gemma links verified, debug-signed arm64 release APK rebuilt, setup screen now stays open after Gemma import so the Voice models card is reachable
-- Commit under evaluation: `ccde5e3` on `devin/round1-scaffold-ui`
+- Phase: Round 4 in progress — dedicated settings screen added, all supported-language voice models exposed, and tabletop controls moved out of the center of the screen
+- Commit under evaluation: `9259bfa` on `devin/round1-scaffold-ui`
 - Overall evidence-backed score: not rated / 100 (real engines compile and launch
-  on an x86_64 emulator; release APK compiles for arm64, but no physical-device
-  or model-asset measurements yet)
-- Release gates: Build and launch smoke-test gates pass; model-download UI compiles
-  and links verified; remaining gates blocked by physical reference device and
-  `.litertlm` import
+  on an x86_64 emulator; release APK compiles for arm64 and is signed for device-side install, but no physical-device or model-asset measurements yet)
+- Release gates: Build, lint, and unit tests pass; settings/model/voice UI compiles;
+  remaining gates blocked by physical reference device and `.litertlm` import
 - Physical reference device: not selected
 - Current highest-impact gap: end-to-end English ↔ Spanish vertical slice with real
   STT/Gemma/TTS on a physical device, requiring `.litertlm` import
 - Next action: install the new debug-signed `app-release.apk`, import the `.litertlm`
-  model, use the in-app voice-model download UI (or let the app download on first
-  use), run `docs/BENCHMARK_CHECKLIST.md`, and return `relay_benchmark_latest.json` + logcat
+  model, use Settings → Voice models to download the desired languages, run `docs/BENCHMARK_CHECKLIST.md`, and return `relay_benchmark_latest.json` + logcat
 - Environment: Android SDK command-line tools installed at `/home/ubuntu/Android/Sdk`
-  (build-tools 34.0.0, platform 34, emulator, x86_64 system image). AVD and physical
-  device tests are later steps.
+  (build-tools 34.0.0, platform 34, emulator). AVD and physical device tests are later steps.
 
 ## Product decisions
 
@@ -61,6 +57,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | 1 | (this PR) | Reproducible build, fake-engine UI vertical slice, state-machine tests, emulator e2e fixes | 0 | not rated | Build/lint/unit tests green; debug APK produced; end-to-end emulator run verified default conversation, English→Spanish turn, swap, and tabletop mode after fixing BigSpeakButton press/release and setup routing | passed testing agent; pending independent critic review |
 | 2 | (this PR) | Real LiteRT-LM/Moonshine engine integration, emulator smoke test, release build, and benchmark export | not rated | not rated | Kotlin 2.3.0/Compose compiler 2.3.0 resolve metadata mismatch; `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder`, `FilePerformanceRecorder` wired; build/lint/unit tests green; smoke test on `android-34` x86_64 emulator passes; `./gradlew :app:assembleRelease` produces unsigned `arm64-v8a` APK; `docs/BENCHMARK_CHECKLIST.md` and `tools/extract_benchmark.py` ready for user self-test | compiled and launched; end-to-end English ↔ Spanish still blocked by missing model assets and physical device |
 | 3 | `ccde5e3` | Verify model download links, add in-app Moonshine STT/TTS downloader, and fix model import/engine warming | not rated | not rated | All Gemma and Moonshine STT/TTS file URLs verified with GET + User-Agent; `MoonshineDownloadWorker`/`WorkManager` download UI added to setup screen; `SetupViewModel` fixed so the voice-model card remains reachable after Gemma import; `MoonshineSpeechRecognizer` passes matching `modelArch` to `ModelSpec.stt`; `MoonshineSpeechSynthesizer` uses per-language voices (Kokoro `af_heart`, `ef_dora`, `jf_alpha`, `zf_xiaobei`; Piper `ar_JO-kareem-medium`, `ko_KR-melotts-medium`); `INTERNET` permission added; `LocalModelManager` validates `.litertlm` extension before copying, handles existing model files and rename failures, and surfaces import errors in the model status card; `GemmaTranslationEngine` warms asynchronously on IO, exposes readiness to setup screen, and disables "Ready to translate" with a "Warming translator…" label while loading; `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleRelease` green; `app-release.apk` debug-signed and `apksigner verify` passes; emulator smoke test on `android-34` x86_64 shows setup screen, voice-model card, and engine-warming state | compiled, signed, and UI verified; end-to-end physical-device test blocked |
+| 4 | `9259bfa` | Settings screen, all-language voice-model downloads, and tabletop layout fix | not rated | not rated | Added `SettingsScreen` reachable from conversation and setup; `ModelDownloadManager` exposes `allSpecs()` for every supported language; `ModelDownloadViewModel` supports per-language-pair and all-languages task lists plus `startAllLanguages()`; `ConversationScreen` uses `TopAppBar` with settings icon, moves swap/replay/cancel there, and removes the central control column from tabletop mode; `SpeakerZone` now records from either side with `ConversationViewModel.startRecordingIn(language)` and restores the preferred pair after each turn; `SetupScreen` links to settings for more languages and offers a skip button; `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleRelease` green; `app-release.apk` debug-signed and `apksigner verify` passes | build and UI compile; fresh emulator/device UI walkthrough pending |
 
 ## Current benchmark summary
 
