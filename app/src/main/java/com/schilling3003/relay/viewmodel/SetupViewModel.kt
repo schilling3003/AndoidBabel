@@ -8,7 +8,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.schilling3003.relay.domain.EngineReadiness
 import com.schilling3003.relay.domain.ImportResult
-import com.schilling3003.relay.domain.Language
 import com.schilling3003.relay.domain.ModelError
 import com.schilling3003.relay.domain.ModelState
 import com.schilling3003.relay.engines.ModelManager
@@ -35,20 +34,16 @@ class SetupViewModel(
     private val _shouldShowSetup = mutableStateOf(computeShouldShow())
     val shouldShowSetup: State<Boolean> = _shouldShowSetup
 
-    private val _voiceModelsPresent = mutableStateOf(computeVoiceModelsPresent())
-    val voiceModelsPresent: State<Boolean> = _voiceModelsPresent
-
     init {
         viewModelScope.launch {
             modelManager.state.collectLatest {
                 _modelState.value = it
-                _voiceModelsPresent.value = computeVoiceModelsPresent()
                 when (it) {
                     is ModelState.Missing -> _shouldShowSetup.value = true
                     is ModelState.Error -> _shouldShowSetup.value = true
                     is ModelState.Ready -> {
                         // Keep setup visible after Gemma is imported until the user taps
-                        // "Ready to translate", so the voice-model card can be used.
+                        // "Ready to translate", so optional voice-model downloads can run.
                         if (_shouldShowSetup.value) {
                             _shouldShowSetup.value = true
                         }
@@ -72,14 +67,12 @@ class SetupViewModel(
                 is ImportResult.Failure -> _importError.value = result.error
                 is ImportResult.Cancelled -> _importError.value = ModelError.CopyFailed(result.reason)
             }
-            _voiceModelsPresent.value = computeVoiceModelsPresent()
         }
     }
 
     fun removeModel() {
         viewModelScope.launch {
             modelManager.remove()
-            _voiceModelsPresent.value = computeVoiceModelsPresent()
         }
     }
 
@@ -93,18 +86,9 @@ class SetupViewModel(
         }
     }
 
-    fun refreshVoiceModels() {
-        _voiceModelsPresent.value = computeVoiceModelsPresent()
-    }
-
     private fun computeShouldShow(): Boolean {
-        if (modelManager.state.value !is ModelState.Ready) return true
-        return !computeVoiceModelsPresent()
+        return modelManager.state.value !is ModelState.Ready
     }
-
-    private fun computeVoiceModelsPresent(): Boolean =
-        downloadManager.requiredSpecs(Language.ENGLISH, Language.SPANISH)
-            .all { downloadManager.isPresent(it) }
 
     class Factory(
         private val modelManager: ModelManager,

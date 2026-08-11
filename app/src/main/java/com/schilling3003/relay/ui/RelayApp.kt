@@ -1,9 +1,14 @@
 package com.schilling3003.relay.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.schilling3003.relay.RelayApplication
 import com.schilling3003.relay.ui.conversation.ConversationScreen
+import com.schilling3003.relay.ui.settings.SettingsScreen
 import com.schilling3003.relay.ui.setup.SetupScreen
 import com.schilling3003.relay.ui.theme.RelayTheme
 import com.schilling3003.relay.viewmodel.ConversationViewModel
@@ -11,7 +16,7 @@ import com.schilling3003.relay.viewmodel.ModelDownloadViewModel
 import com.schilling3003.relay.viewmodel.SetupViewModel
 
 /**
- * Root Compose entry point. Switches between setup and conversation surfaces.
+ * Root Compose entry point. Switches between setup, conversation, and settings surfaces.
  */
 @Composable
 fun RelayApp(recordPermissionGranted: Boolean = false) {
@@ -34,17 +39,28 @@ fun RelayApp(recordPermissionGranted: Boolean = false) {
         )
     )
 
+    var settingsOpen by remember { mutableStateOf(false) }
+    val openSettings = { settingsOpen = true }
+    val closeSettings = { settingsOpen = false }
+
     RelayTheme {
-        if (setupViewModel.shouldShowSetup.value) {
-            SetupScreen(
+        when {
+            settingsOpen -> SettingsScreen(
+                setupViewModel = setupViewModel,
+                downloadViewModel = downloadViewModel,
+                conversationViewModel = conversationViewModel,
+                onBack = closeSettings
+            )
+            setupViewModel.shouldShowSetup.value -> SetupScreen(
                 viewModel = setupViewModel,
                 downloadViewModel = downloadViewModel,
-                onSetupComplete = { setupViewModel.dismissSetup() }
+                onSetupComplete = { setupViewModel.dismissSetup() },
+                onSettings = openSettings
             )
-        } else {
-            ConversationScreen(
+            else -> ConversationScreen(
                 viewModel = conversationViewModel,
-                recordPermissionGranted = recordPermissionGranted
+                recordPermissionGranted = recordPermissionGranted,
+                onSettings = openSettings
             )
         }
     }

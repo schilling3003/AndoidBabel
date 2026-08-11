@@ -54,6 +54,11 @@ class ModelDownloadManager(private val context: Context) {
         }
     }
 
+    fun allSpecs(): List<DownloadSpec> =
+        Language.entries.flatMap { language ->
+            listOf(sttSpec(language), ttsSpec(language))
+        }
+
     fun isPresent(spec: DownloadSpec): Boolean =
         assetDownloader.isModelPresent(spec.modelDir, spec.modelSpec)
 

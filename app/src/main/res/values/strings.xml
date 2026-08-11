@@ -56,9 +56,19 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
     <string name="settings_remove_model">Remove model</string>
     <string name="settings_privacy_title">Privacy</string>
     <string name="settings_privacy_body">All speech, text, and translation stay on this device. Relay does not send data to servers. The model and voice files are stored locally.</string>
     <string name="settings_history">Keep conversation history</string>
     <string name="settings_erase_history">Erase history</string>
+    <string name="settings_languages">Languages</string>
+    <string name="settings_source_language">I speak</string>
+    <string name="settings_target_language">They speak</string>
+    <string name="settings_tabletop_title">Tabletop mode</string>
+    <string name="settings_tabletop_subtitle">Show two speak buttons side-by-side for face-to-face conversation.</string>
+    <string name="settings_all_languages_title">Voice models</string>
+    <string name="settings_all_languages_subtitle">Download speech-to-text and text-to-speech data for every supported language.</string>
+    <string name="settings_download_all_languages">Download all languages</string>
+    <string name="setup_more_languages">More languages &amp; voices</string>
 </resources>

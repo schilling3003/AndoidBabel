@@ -14,7 +14,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -23,15 +29,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.semantics.Role
@@ -39,6 +47,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,10 +59,12 @@ import com.schilling3003.relay.domain.Language
 import com.schilling3003.relay.domain.LayoutDirection as RelayLayoutDirection
 import com.schilling3003.relay.viewmodel.ConversationViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationScreen(
     viewModel: ConversationViewModel,
-    recordPermissionGranted: Boolean = true
+    recordPermissionGranted: Boolean = true,
+    onSettings: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val source by viewModel.sourceLanguage
@@ -67,47 +78,50 @@ fun ConversationScreen(
         LayoutDirection.Ltr
     }
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-        Scaffold { padding ->
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                RelayTopBar(
+                    source = source,
+                    target = target,
+                    state = state,
+                    turns = turns,
+                    onSwap = { viewModel.swapLanguages() },
+                    onCancel = { viewModel.cancel() },
+                    onReplay = { viewModel.replayLast() },
+                    onSettings = onSettings,
+                    scrollBehavior = scrollBehavior
+                )
+            }
+        ) { padding ->
             Surface(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    if (!recordPermissionGranted) {
-                        RecordAudioPermissionBanner()
-                    }
-                    if (tabletop) {
+                if (tabletop) {
                     TabletopLayout(
                         source = source,
                         target = target,
                         state = state,
                         turns = turns,
-                        modifier = Modifier.weight(1f),
                         recordPermissionGranted = recordPermissionGranted,
-                        onSourceSpeak = { viewModel.startRecording() },
+                        onSourceSpeak = { viewModel.startRecordingIn(source) },
                         onSourceRelease = { viewModel.stopRecording() },
-                        onTargetSpeak = { viewModel.swapLanguages(); viewModel.startRecording() },
-                        onTargetRelease = { viewModel.stopRecording() },
-                        onSwap = { viewModel.swapLanguages() },
-                        onToggleMode = { viewModel.toggleTabletopMode() },
-                        onCancel = { viewModel.cancel() },
-                        onReplay = { viewModel.replayLast() },
-                        onRetry = { viewModel.retryLast() }
+                        onTargetSpeak = { viewModel.startRecordingIn(target) },
+                        onTargetRelease = { viewModel.stopRecording() }
                     )
                 } else {
                     PortraitLayout(
                         source = source,
-                        target = target,
                         state = state,
                         turns = turns,
-                        modifier = Modifier.weight(1f),
                         recordPermissionGranted = recordPermissionGranted,
                         onSpeakPress = { viewModel.startRecording() },
                         onSpeakRelease = { viewModel.stopRecording() },
-                        onSwap = { viewModel.swapLanguages() },
-                        onToggleMode = { viewModel.toggleTabletopMode() },
                         onCancel = { viewModel.cancel() },
                         onReplay = { viewModel.replayLast() },
                         onRetry = { viewModel.retryLast() }
@@ -117,20 +131,88 @@ fun ConversationScreen(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RelayTopBar(
+    source: Language,
+    target: Language,
+    state: ConversationState,
+    turns: List<ConversationTurn>,
+    onSwap: () -> Unit,
+    onCancel: () -> Unit,
+    onReplay: () -> Unit,
+    onSettings: () -> Unit,
+    scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior
+) {
+    TopAppBar(
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(0.75f),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = source.displayLabel(),
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Start
+                )
+                IconButton(onClick = onSwap) {
+                    Icon(
+                        imageVector = Icons.Filled.SwapHoriz,
+                        contentDescription = stringResource(R.string.conversation_swap_languages)
+                    )
+                }
+                Text(
+                    text = target.displayLabel(),
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.End
+                )
+            }
+        },
+        actions = {
+            if (turns.isNotEmpty() && state !is ConversationState.Speaking) {
+                IconButton(onClick = onReplay) {
+                    Icon(
+                        imageVector = Icons.Filled.Replay,
+                        contentDescription = stringResource(R.string.conversation_replay)
+                    )
+                }
+            }
+            if (state.isProcessing) {
+                IconButton(onClick = onCancel) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.conversation_cancel)
+                    )
+                }
+            }
+            IconButton(onClick = onSettings) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = stringResource(R.string.settings_title)
+                )
+            }
+        },
+        scrollBehavior = scrollBehavior
+    )
 }
 
 @Composable
 private fun PortraitLayout(
     source: Language,
-    target: Language,
     state: ConversationState,
     turns: List<ConversationTurn>,
     recordPermissionGranted: Boolean = true,
     modifier: Modifier = Modifier,
     onSpeakPress: () -> Unit,
     onSpeakRelease: () -> Unit,
-    onSwap: () -> Unit,
-    onToggleMode: () -> Unit,
     onCancel: () -> Unit,
     onReplay: () -> Unit,
     onRetry: () -> Unit
@@ -143,7 +225,9 @@ private fun PortraitLayout(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        TopBar(source, target, onSwap, onToggleMode)
+        if (!recordPermissionGranted) {
+            RecordAudioPermissionBanner()
+        }
 
         CurrentResultCard(state, onCancel, onReplay, onRetry)
 
@@ -182,57 +266,25 @@ private fun TabletopLayout(
     onSourceSpeak: () -> Unit,
     onSourceRelease: () -> Unit,
     onTargetSpeak: () -> Unit,
-    onTargetRelease: () -> Unit,
-    onSwap: () -> Unit,
-    onToggleMode: () -> Unit,
-    onCancel: () -> Unit,
-    onReplay: () -> Unit,
-    onRetry: () -> Unit
+    onTargetRelease: () -> Unit
 ) {
     Row(modifier = modifier.fillMaxSize()) {
         SpeakerZone(
             language = source,
-            isLeft = true,
             state = state,
-            turn = turns.lastOrNull { it.sourceLanguage == source },
+            turn = turns.lastOrNull { it.sourceLanguage == source || it.targetLanguage == source },
             recordPermissionGranted = recordPermissionGranted,
             onPress = onSourceSpeak,
             onRelease = onSourceRelease,
             modifier = Modifier.weight(1f)
         )
 
-        Column(
-            modifier = Modifier
-                .width(64.dp)
-                .fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            IconButton(onClick = onSwap) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_swap),
-                    contentDescription = stringResource(R.string.conversation_swap_languages)
-                )
-            }
-            IconButton(onClick = onToggleMode) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_tabletop),
-                    contentDescription = stringResource(R.string.conversation_portrait_mode)
-                )
-            }
-            if (state.isProcessing) {
-                TextButton(onClick = onCancel) { Text(stringResource(R.string.conversation_cancel)) }
-            }
-            if (turns.isNotEmpty() && state !is ConversationState.Speaking) {
-                TextButton(onClick = onReplay) { Text(stringResource(R.string.conversation_replay)) }
-            }
-        }
+        VerticalDivider()
 
         SpeakerZone(
             language = target,
-            isLeft = false,
             state = state,
-            turn = turns.lastOrNull { it.targetLanguage == target },
+            turn = turns.lastOrNull { it.sourceLanguage == target || it.targetLanguage == target },
             recordPermissionGranted = recordPermissionGranted,
             onPress = onTargetSpeak,
             onRelease = onTargetRelease,
@@ -242,41 +294,14 @@ private fun TabletopLayout(
 }
 
 @Composable
-private fun TopBar(
-    source: Language,
-    target: Language,
-    onSwap: () -> Unit,
-    onToggleMode: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = source.displayLabel(),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(onClick = onSwap) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_swap),
-                contentDescription = stringResource(R.string.conversation_swap_languages)
-            )
-        }
-        Text(
-            text = target.displayLabel(),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.End
-        )
-        IconButton(onClick = onToggleMode) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_tabletop),
-                contentDescription = stringResource(R.string.conversation_tabletop_mode)
-            )
-        }
-    }
+private fun VerticalDivider(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(vertical = 16.dp)
+            .width(1.dp),
+        color = MaterialTheme.colorScheme.outlineVariant
+    ) {}
 }
 
 @Composable
@@ -429,7 +454,7 @@ private fun BigSpeakButton(
     onPress: () -> Unit,
     onRelease: () -> Unit
 ) {
-    val isRecording = state is ConversationState.Recording
+    val isRecording = state is ConversationState.Recording && state.sourceLanguage == source
     val label = when (state) {
         is ConversationState.Recording -> stringResource(R.string.conversation_release_to_send)
         else -> stringResource(R.string.conversation_hold_to_speak)
@@ -488,7 +513,6 @@ private fun BigSpeakButton(
 @Composable
 private fun SpeakerZone(
     language: Language,
-    isLeft: Boolean,
     state: ConversationState,
     turn: ConversationTurn?,
     recordPermissionGranted: Boolean = true,
@@ -515,16 +539,21 @@ private fun SpeakerZone(
                 .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
-            turn?.let { TurnText(it) } ?: Text(
-                text = if (isLeft) stringResource(R.string.conversation_hold_to_speak)
-                else stringResource(R.string.conversation_release_to_send),
-                textAlign = TextAlign.Center
-            )
+            if (state.isProcessing) {
+                StatusText(state)
+            } else if (turn != null) {
+                TurnText(turn)
+            } else {
+                Text(
+                    text = stringResource(R.string.conversation_hold_to_speak),
+                    textAlign = TextAlign.Center
+                )
+            }
         }
 
         BigSpeakButton(
             source = language,
-            state = if (isLeft && state is ConversationState.Recording) state else ConversationState.Ready(language, language),
+            state = state,
             permissionGranted = recordPermissionGranted,
             onPress = onPress,
             onRelease = onRelease

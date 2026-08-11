@@ -52,6 +52,9 @@ class ConversationViewModel(
     private val _targetLanguage = mutableStateOf(Language.SPANISH)
     val targetLanguage: State<Language> = _targetLanguage
 
+    private val _preferredSource = mutableStateOf(Language.ENGLISH)
+    private val _preferredTarget = mutableStateOf(Language.SPANISH)
+
     private val _turns = mutableStateListOf<ConversationTurn>()
     val turns: List<ConversationTurn> = _turns
 
@@ -88,26 +91,46 @@ class ConversationViewModel(
 
     fun setSource(language: Language) {
         if (_state.value.isProcessing) return
-        _sourceLanguage.value = language
+        _preferredSource.value = language
+        if (language == _preferredTarget.value) {
+            _preferredTarget.value = _sourceLanguage.value
+        }
+        _sourceLanguage.value = _preferredSource.value
+        _targetLanguage.value = _preferredTarget.value
         updateReadyState()
     }
 
     fun setTarget(language: Language) {
         if (_state.value.isProcessing) return
-        _targetLanguage.value = language
+        _preferredTarget.value = language
+        if (language == _preferredSource.value) {
+            _preferredSource.value = _targetLanguage.value
+        }
+        _sourceLanguage.value = _preferredSource.value
+        _targetLanguage.value = _preferredTarget.value
         updateReadyState()
     }
 
     fun swapLanguages() {
         if (_state.value.isProcessing) return
-        val oldSource = _sourceLanguage.value
-        _sourceLanguage.value = _targetLanguage.value
-        _targetLanguage.value = oldSource
+        val oldSource = _preferredSource.value
+        _preferredSource.value = _preferredTarget.value
+        _preferredTarget.value = oldSource
+        _sourceLanguage.value = _preferredSource.value
+        _targetLanguage.value = _preferredTarget.value
         updateReadyState()
     }
 
     fun toggleTabletopMode() {
         _tabletopMode.value = !_tabletopMode.value
+    }
+
+    fun startRecordingIn(language: Language) {
+        if (_state.value.isProcessing) return
+        val other = if (language == _preferredSource.value) _preferredTarget.value else _preferredSource.value
+        _sourceLanguage.value = language
+        _targetLanguage.value = other
+        startRecording()
     }
 
     fun startRecording() {
@@ -200,6 +223,8 @@ class ConversationViewModel(
     }
 
     private fun recoverToReady() {
+        _sourceLanguage.value = _preferredSource.value
+        _targetLanguage.value = _preferredTarget.value
         _state.value = ConversationState.Ready(_sourceLanguage.value, _targetLanguage.value)
     }
 
