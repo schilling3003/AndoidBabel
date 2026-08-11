@@ -5,6 +5,15 @@ plugins {
     alias(libs.plugins.serialization)
 }
 
+fun gitCommit(): String = try {
+    providers.exec {
+        commandLine("git", "rev-parse", "--short", "HEAD")
+        workingDir = rootDir
+    }.standardOutput.asText.get().trim()
+} catch (e: Exception) {
+    "unknown"
+}
+
 android {
     namespace = "com.schilling3003.relay"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
@@ -16,6 +25,8 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
+        buildConfigField("String", "GIT_COMMIT", "\"${gitCommit()}\"")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -25,11 +36,17 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
+            isShrinkResources = false
+            // Unsigned release APK. The product spec requires an unsigned or locally
+            // signed arm64 release APK; do not commit a signing config.
+            signingConfig = null
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            ndk {
+                abiFilters += listOf("arm64-v8a")
+            }
         }
         debug {
             isDebuggable = true
@@ -53,6 +70,14 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    composeCompiler {
+        // Disable Compose group mapping generation. It requires the
+        // `compose-group-mapping` artifact and is only needed to deobfuscate
+        // Compose group keys in minified stack traces; we do not need it for
+        // the release APK or benchmark builds in this phase.
+        includeComposeMappingFile = false
     }
 
 

@@ -17,6 +17,7 @@ import com.schilling3003.relay.engines.fake.FakePerformanceRecorder
 import com.schilling3003.relay.engines.fake.FakeSpeechRecognizer
 import com.schilling3003.relay.engines.fake.FakeSpeechSynthesizer
 import com.schilling3003.relay.engines.fake.FakeTranslationEngine
+import com.schilling3003.relay.engines.FilePerformanceRecorder
 import com.schilling3003.relay.engines.litert.GemmaTranslationEngine
 import com.schilling3003.relay.engines.moonshine.MoonshineSpeechRecognizer
 import com.schilling3003.relay.engines.moonshine.MoonshineSpeechSynthesizer
@@ -72,7 +73,7 @@ class RelayApplication : Application() {
             translationEngine = GemmaTranslationEngine(this, modelManager)
             speechSynthesizer = MoonshineSpeechSynthesizer(this, audioPlayer)
             audioRecorder = RealAudioRecorder(this)
-            performanceRecorder = FakePerformanceRecorder()
+            performanceRecorder = FilePerformanceRecorder(this)
         }
     }
 

@@ -7,8 +7,9 @@ so real engines can be swapped in without changing the UI.
 
 > **Current status:** Round 2 in progress. The project builds, passes unit tests,
 > and wires real LiteRT-LM (Gemma) and Moonshine Voice STT/TTS engine adapters.
-> The UI-only vertical slice with deterministic fakes is complete; the next step
-> is end-to-end English ↔ Spanish on a physical device with real model assets.
+> Emulator smoke tests pass. An unsigned `arm64-v8a` release APK can be built and
+> `docs/BENCHMARK_CHECKLIST.md` explains how to run the real English ↔ Spanish
+> vertical slice on a physical device.
 
 ## Supported languages
 
@@ -22,6 +23,15 @@ export ANDROID_HOME=/path/to/Android/Sdk
 ```
 
 The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+
+### Unsigned release APK (arm64-v8a)
+
+```bash
+./gradlew :app:assembleRelease
+```
+
+The release APK is written to `app/build/outputs/apk/release/app-release-unsigned.apk`
+and contains only `arm64-v8a` native libraries.
 
 ## Project structure
 
@@ -57,24 +67,34 @@ inference is on-device.
 - No analytics or transcript logging in the current codebase.
 - All inference runs on-device after models are present.
 
+## On-device benchmark
+
+`docs/BENCHMARK_CHECKLIST.md` contains the full procedure: install the unsigned
+release APK, import a `.litertlm` model, run English ↔ Spanish turns, then pull
+the auto-generated `relay_benchmark_latest.json` and `logcat` using the helper
+scripts in `tools/`.
+
 ## Known limitations (Round 2)
 
-- Real engine adapters compile but have not been exercised end-to-end with
-  a `.litertlm` Gemma model and Moonshine STT/TTS model files on a device.
+- Real engine adapters compile and the app launches, but end-to-end English ↔
+  Spanish has not been validated on a physical device with a `.litertlm` Gemma
+  model and Moonshine STT/TTS model files.
 - Translation output parsing uses `Message.toString()`; it may need a structured
   response format once the model is available.
-- Runtime `RECORD_AUDIO` permission is requested at startup; a dedicated
-  permission-rationale screen may be added later.
-- Release signing config, R8/ProGuard rules, and arm64 release APK are future
-  gauntlet steps.
+- Runtime `RECORD_AUDIO` permission is requested at startup and disables the speak
+  button when denied; a dedicated permission-rationale screen is still future work.
+- Remaining languages, RTL/script-specific layout validation, and release signing
+  are future gauntlet steps.
 
 ## Next steps
 
-1. Obtain/confirm a compatible `.litertlm` Gemma 4 E2B model and Moonshine
-   STT/TTS model files for English and Spanish.
-2. Run the English ↔ Spanish vertical slice on a physical reference device.
+1. Run the English ↔ Spanish vertical slice on a physical reference device
+   following `docs/BENCHMARK_CHECKLIST.md` and send back the benchmark JSON and
+   logcat.
+2. Iterate on real-device STT/translation/TTS issues.
 3. Add remaining languages with RTL and script-specific validation.
-4. Add performance instrumentation and produce a signed arm64 release APK.
+4. Add release signing, remaining accessibility checks, and final release
+   engineering.
 
 ## License
 

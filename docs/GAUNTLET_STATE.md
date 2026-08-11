@@ -5,17 +5,18 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 
 ## Current status
 
-- Phase: Round 2 in progress — real engine adapters wired, build/lint/unit tests green, emulator smoke test passed
+- Phase: Round 2 in progress — real engine adapters wired, build/lint/unit tests green, emulator smoke test passed, unsigned arm64 release APK builds
 - Commit under evaluation: latest on `devin/round1-scaffold-ui`
 - Overall evidence-backed score: not rated / 100 (real engines compile and launch
-  on an x86_64 emulator, but no physical-device or model-asset measurements yet)
+  on an x86_64 emulator; release APK compiles for arm64, but no physical-device
+  or model-asset measurements yet)
 - Release gates: Build and launch smoke-test gates pass with real engine artifacts;
   remaining gates blocked by missing model assets and physical reference device
 - Physical reference device: not selected
 - Current highest-impact gap: end-to-end English ↔ Spanish vertical slice with real
   STT/Gemma/TTS on a physical device, requiring `.litertlm` and Moonshine model files
-- Next action: obtain/confirm model assets, run on a physical reference device, or
-  mark the gate `BLOCKED — PHYSICAL DEVICE + MODEL ASSETS REQUIRED`
+- Next action: user runs `docs/BENCHMARK_CHECKLIST.md` on a physical device and
+  returns benchmark JSON + logcat; otherwise mark gate `BLOCKED — PHYSICAL DEVICE + MODEL ASSETS REQUIRED`
 - Environment: Android SDK command-line tools installed at `/home/ubuntu/Android/Sdk`
   (build-tools 34.0.0, platform 34, emulator, x86_64 system image). AVD and physical
   device tests are later steps.
@@ -34,20 +35,21 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | 2026-08-11 | Kotlin 2.3.0 and Compose compiler 2.3.0 | Resolves LiteRT-LM 0.15.0 binary Kotlin metadata 2.3.0 incompatibility with the earlier Kotlin 2.0.21 compiler | Re-pin only if runtime/AGP issues surface on the reference device |
 | 2026-08-11 | Real `litertlm-android` and `moonshine-voice` artifacts wired | Engine adapters (`GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder`) compile behind stable interfaces | Replace only if runtime failures or unacceptable latency on reference device |
 | 2026-08-11 | Moonshine STT/TTS model files downloaded on first use with explicit user action | Avoids bundling large assets in the base APK; network is used only for model acquisition, never for inference | Replace with bundled or SAF-imported models if offline-first setup is required from first launch |
-| 2026-08-11 | Runtime `RECORD_AUDIO` permission requested at startup | Required for real `AudioRecord` capture; can be pre-granted via adb for emulator testing | Add a dedicated permission rationale screen if UX review requires it |
+| 2026-08-11 | Runtime `RECORD_AUDIO` permission requested at startup and disables speak when denied | Required for real `AudioRecord` capture; `ConversationScreen` shows an in-screen banner and disables the speak buttons if permission is denied | Add a dedicated permission rationale screen if UX review requires it |
+| 2026-08-11 | Unsigned arm64 release APK, R8 enabled, `FilePerformanceRecorder` export | Quality gates require a reproducible release APK and on-device benchmark evidence; `composeCompiler.includeComposeMappingFile = false` avoids an unpublished `compose-group-mapping` dependency that broke release builds | Re-enable group mapping once the artifact is reliably resolvable; add signing config before external distribution |
 
 ## Gate status
 
 | Gate | Status | Evidence | Blocker/next step |
 | --- | --- | --- | --- |
-| Build | Passes debug with real engine artifacts | `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleDebug` all green with `litertlm-android` and `moonshine-voice` enabled | Release build and APK signing config; R8/ProGuard rules for native engines |
+| Build | Passes debug and produces unsigned arm64 release APK with real engine artifacts | `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease` all green with `litertlm-android` and `moonshine-voice` enabled; release APK contains only `arm64-v8a` libs | Release signing config; full R8 soak/runtime verification on device |
 | Offline | Not run | — | Real engines + model import on a device |
 | Privacy | Reviewed | Manifest has `RECORD_AUDIO`; `moonshine-voice` AAR declares `INTERNET`/`ACCESS_NETWORK_STATE` for explicit on-demand model downloads. No telemetry, analytics, or transcript logging. Translation is on-device. | Verify no network path is used during inference; document downloader behavior |
 | Core journey | Real engine adapters wired and launch without crash on android-34 x86_64 emulator; UI journey verified with fake engines on the same emulator | `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder` integrated behind stable interfaces; smoke test confirms cold-start, `RECORD_AUDIO` permission dialog, and landing on *Set up Relay* with no crash; state machine unchanged | Real `.litertlm` + Moonshine STT/TTS model files on a physical device for English ↔ Spanish two-turn test |
 | Stability | Partial | Unit tests cover state transitions, cancellation, swap-while-recording, turn accumulation | Soak, lifecycle, rotation, process-death tests on device |
 | Accessibility | Partial | Compose semantics on speak button, role/Button, content descriptions, large-text-safe scrollable layouts | TalkBack script, contrast checker, RTL/device screenshot suite |
 | Correctness | Partial | `LanguageTest` covers direction/script/defaults; `ConversationViewModelTest` covers pipeline | Real translation corpus, parser tests, malformed-output recovery |
-| Evidence | Partial | `PerformanceRecorder` interface and fake implementation; `BenchmarkReport` model | Real device traces and exported JSON |
+| Evidence | Partial | `PerformanceRecorder` interface, `FakePerformanceRecorder`, and `FilePerformanceRecorder` that writes `relay_benchmark_latest.json` to external files dir after each turn; `tools/extract_benchmark.py` converts JSON to a markdown report | Real device traces and exported JSON from `docs/BENCHMARK_CHECKLIST.md` run |
 | Independent review | Not run | — | Critic pass after this PR |
 
 ## Score history
@@ -55,7 +57,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | Round | Commit | Focus | Before | After | Evidence | Critic verdict |
 | ---: | --- | --- | ---: | ---: | --- | --- |
 | 1 | (this PR) | Reproducible build, fake-engine UI vertical slice, state-machine tests, emulator e2e fixes | 0 | not rated | Build/lint/unit tests green; debug APK produced; end-to-end emulator run verified default conversation, English→Spanish turn, swap, and tabletop mode after fixing BigSpeakButton press/release and setup routing | passed testing agent; pending independent critic review |
-| 2 | (this PR) | Real LiteRT-LM/Moonshine engine integration and emulator smoke test | not rated | not rated | Kotlin 2.3.0/Compose compiler 2.3.0 resolve metadata mismatch; `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder` wired; build/lint/unit tests green; smoke test on `android-34` x86_64 emulator shows cold-start, permission dialog, and *Set up Relay* with no crash | compiled and launched; end-to-end English ↔ Spanish still blocked by missing model assets and physical device |
+| 2 | (this PR) | Real LiteRT-LM/Moonshine engine integration, emulator smoke test, release build, and benchmark export | not rated | not rated | Kotlin 2.3.0/Compose compiler 2.3.0 resolve metadata mismatch; `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder`, `FilePerformanceRecorder` wired; build/lint/unit tests green; smoke test on `android-34` x86_64 emulator passes; `./gradlew :app:assembleRelease` produces unsigned `arm64-v8a` APK; `docs/BENCHMARK_CHECKLIST.md` and `tools/extract_benchmark.py` ready for user self-test | compiled and launched; end-to-end English ↔ Spanish still blocked by missing model assets and physical device |
 
 ## Current benchmark summary
 
