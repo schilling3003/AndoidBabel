@@ -17,7 +17,7 @@ import com.schilling3003.relay.viewmodel.SetupViewModel
 fun RelayApp(recordPermissionGranted: Boolean = false) {
     val app = RelayApplication.instance
     val setupViewModel: SetupViewModel = viewModel(
-        factory = SetupViewModel.Factory(app.modelManager, app.modelDownloader)
+        factory = SetupViewModel.Factory(app.modelManager, app.translationEngine, app.modelDownloader)
     )
     val downloadViewModel: ModelDownloadViewModel = viewModel(
         factory = ModelDownloadViewModel.Factory(app.modelDownloader)

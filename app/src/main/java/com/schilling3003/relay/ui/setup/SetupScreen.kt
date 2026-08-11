@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.WorkInfo
 import com.schilling3003.relay.R
+import com.schilling3003.relay.domain.EngineReadiness
 import com.schilling3003.relay.domain.ModelError
 import com.schilling3003.relay.domain.ModelState
 import com.schilling3003.relay.engines.moonshine.ModelDownloadManager
@@ -48,6 +49,7 @@ fun SetupScreen(
     onSetupComplete: () -> Unit
 ) {
     val modelState by viewModel.modelState
+    val engineReadiness by viewModel.engineReadiness
     val importError by viewModel.importError
     val downloadTasks by downloadViewModel.tasks.collectAsStateWithLifecycle()
 
@@ -72,7 +74,7 @@ fun SetupScreen(
                 style = MaterialTheme.typography.headlineLarge
             )
 
-            ModelStatusCard(modelState)
+            ModelStatusCard(modelState, engineReadiness)
 
             Text(
                 text = stringResource(R.string.setup_model_requirements),
@@ -100,13 +102,21 @@ fun SetupScreen(
             }
 
             if (modelState is ModelState.Ready) {
+                val engineReady = engineReadiness is EngineReadiness.Ready
                 Button(
                     onClick = onSetupComplete,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp)
+                        .height(56.dp),
+                    enabled = engineReady
                 ) {
-                    Text(text = stringResource(R.string.setup_ready))
+                    Text(
+                        text = if (engineReady) {
+                            stringResource(R.string.setup_ready)
+                        } else {
+                            stringResource(R.string.setup_warming_engine)
+                        }
+                    )
                 }
             }
 
@@ -133,10 +143,15 @@ fun SetupScreen(
 }
 
 @Composable
-private fun ModelStatusCard(state: ModelState) {
+private fun ModelStatusCard(state: ModelState, engineReadiness: EngineReadiness) {
     val title = when (state) {
         is ModelState.Missing -> stringResource(R.string.setup_model_missing)
-        is ModelState.Ready -> stringResource(R.string.setup_model_ready)
+        is ModelState.Ready -> when (engineReadiness) {
+            is EngineReadiness.Ready -> stringResource(R.string.setup_model_ready)
+            is EngineReadiness.Loading -> stringResource(R.string.setup_warming_engine)
+            is EngineReadiness.Error -> engineReadiness.message
+            else -> stringResource(R.string.setup_model_ready)
+        }
         is ModelState.Importing -> state.stage
         is ModelState.Validating -> stringResource(R.string.setup_warm_engines)
         is ModelState.Error -> state.reason.userMessage
@@ -158,14 +173,15 @@ private fun ModelStatusCard(state: ModelState) {
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center
             )
-            when (state) {
-                is ModelState.Importing -> {
+            when {
+                state is ModelState.Importing -> {
                     LinearProgressIndicator(
                         progress = { state.bytesCopied.toFloat() / state.totalBytes.toFloat() },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                is ModelState.Validating -> CircularProgressIndicator()
+                state is ModelState.Validating -> CircularProgressIndicator()
+                state is ModelState.Ready && engineReadiness is EngineReadiness.Loading -> CircularProgressIndicator()
                 else -> {}
             }
         }
@@ -199,12 +215,15 @@ private fun ModelDownloadSection(
             )
 
             tasks.forEach { task ->
-                DownloadTaskRow(task = task, onDownload = { onDownload(task) })
+                DownloadTaskRow(
+                    task = task,
+                    onDownload = { onDownload(task) }
+                )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
                     onClick = onRefresh,
@@ -229,67 +248,42 @@ private fun DownloadTaskRow(
     task: ModelDownloadManager.DownloadTask,
     onDownload: () -> Unit
 ) {
-    val statusLabel = when {
-        task.isPresent -> stringResource(R.string.setup_downloaded)
-        task.workState == WorkInfo.State.RUNNING -> stringResource(R.string.setup_downloading)
-        task.workState == WorkInfo.State.ENQUEUED || task.workState == WorkInfo.State.BLOCKED -> stringResource(R.string.setup_pending)
-        task.error != null -> stringResource(R.string.setup_error)
-        else -> stringResource(R.string.setup_pending)
-    }
-
-    val progressFraction = task.progress?.let { p ->
-        if (p.bytesTotal > 0) p.bytesDownloaded.toFloat() / p.bytesTotal.toFloat() else 0f
-    } ?: 0f
-
-    Column(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = task.spec.displayName,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f)
+                style = MaterialTheme.typography.bodyMedium
             )
             when {
-                task.isPresent -> {
-                    Text(
-                        text = statusLabel,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                task.workState == WorkInfo.State.RUNNING -> {
-                    Text(
-                        text = "${(progressFraction * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelMedium
-                    )
-                }
-                else -> {
-                    OutlinedButton(onClick = onDownload) {
-                        Text(text = stringResource(R.string.setup_download))
-                    }
-                }
+                task.isPresent -> Text(
+                    text = stringResource(R.string.setup_downloaded),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                task.workState == WorkInfo.State.RUNNING -> Text(
+                    text = stringResource(R.string.setup_downloading),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                task.workState == WorkInfo.State.ENQUEUED || task.workState == WorkInfo.State.BLOCKED -> Text(
+                    text = stringResource(R.string.setup_pending),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                task.error != null -> Text(
+                    text = stringResource(R.string.setup_error),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
-
-        if (task.workState == WorkInfo.State.RUNNING) {
-            LinearProgressIndicator(
-                progress = { progressFraction },
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        task.error?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall
-            )
+        OutlinedButton(
+            onClick = onDownload,
+            enabled = !task.isPresent && task.workState != WorkInfo.State.RUNNING
+        ) {
+            Text(text = stringResource(R.string.setup_download))
         }
     }
 }

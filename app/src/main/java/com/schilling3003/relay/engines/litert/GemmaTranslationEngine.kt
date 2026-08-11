@@ -21,11 +21,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -50,13 +48,14 @@ class GemmaTranslationEngine(
     private val engineLock = Mutex()
     private var engine: Engine? = null
     private var observeJob: Job? = null
+    private var loadJob: Job? = null
 
     init {
         Engine.setNativeMinLogSeverity(LogSeverity.ERROR)
         observeJob = scope.launch {
-            modelManager.state.collectLatest { state ->
+            modelManager.state.collect { state ->
                 when (state) {
-                    is ModelState.Ready -> loadEngine(state.path)
+                    is ModelState.Ready -> loadEngineAsync(state.path)
                     else -> closeEngine("Model not available")
                 }
             }
@@ -91,39 +90,49 @@ class GemmaTranslationEngine(
         // Cancelling the coroutine scope in which inference runs is the cleanest
         // LiteRT-LM provides at this level. The engine itself is preserved for reuse.
         observeJob?.cancel()
+        loadJob?.cancel()
     }
 
-    private suspend fun loadEngine(modelPath: String) {
-        engineLock.withLock {
-            if (engine?.let { it.isInitialized() } == true) {
-                _readiness.value = EngineReadiness.Ready
-                return
-            }
-            _readiness.value = EngineReadiness.Loading(message = "Loading Gemma…")
-            try {
+    private fun loadEngineAsync(modelPath: String) {
+        loadJob?.cancel()
+        loadJob = scope.launch(dispatcher) {
+            engineLock.withLock {
+                if (engine?.let { it.isInitialized() } == true) {
+                    _readiness.value = EngineReadiness.Ready
+                    return@withLock
+                }
+                _readiness.value = EngineReadiness.Loading(message = "Warming Gemma…")
                 val previous = engine
-                val config = EngineConfig(
-                    modelPath = modelPath,
-                    backend = Backend.CPU(),
-                    cacheDir = context.cacheDir.absolutePath
-                )
-                val newEngine = Engine(config)
-                newEngine.initialize()
-                previous?.close()
-                engine = newEngine
-                _readiness.value = EngineReadiness.Ready
-            } catch (e: Exception) {
-                closeEngine("Failed to load Gemma: ${e.localizedMessage}")
-                throw e
+                try {
+                    val config = EngineConfig(
+                        modelPath = modelPath,
+                        backend = Backend.CPU(),
+                        cacheDir = context.cacheDir.absolutePath
+                    )
+                    val newEngine = Engine(config)
+                    newEngine.initialize()
+                    previous?.close()
+                    engine = newEngine
+                    _readiness.value = EngineReadiness.Ready
+                } catch (e: CancellationException) {
+                    // expected when the model is removed or a newer path arrives
+                } catch (e: Exception) {
+                    previous?.close()
+                    engine = null
+                    _readiness.value = EngineReadiness.Error("Failed to load Gemma: ${e.localizedMessage}")
+                }
             }
         }
     }
 
-    private suspend fun closeEngine(reason: String) {
-        engineLock.withLock {
-            engine?.close()
-            engine = null
-            _readiness.value = if (reason.isBlank()) EngineReadiness.Uninitialized else EngineReadiness.Error(reason)
+    private fun closeEngine(reason: String) {
+        loadJob?.cancel()
+        scope.launch {
+            engineLock.withLock {
+                engine?.close()
+                engine = null
+                _readiness.value = if (reason.isBlank()) EngineReadiness.Uninitialized else EngineReadiness.Error(reason)
+            }
         }
     }
 
@@ -132,11 +141,9 @@ class GemmaTranslationEngine(
             val e = engine
                 ?: throw ModelUnavailableException("Gemma engine is not loaded")
             if (!e.isInitialized()) {
-                loadEngine(modelPath)
-                engine ?: throw ModelUnavailableException("Gemma engine failed to load")
-            } else {
-                e
+                throw ModelUnavailableException("Gemma engine is still warming")
             }
+            e
         }
         return current.createConversation(
             ConversationConfig(

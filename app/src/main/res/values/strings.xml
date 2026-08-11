@@ -11,6 +11,7 @@
     <string name="setup_select_languages">Choose languages</string>
     <string name="setup_warm_engines">Preparing translator…</string>
     <string name="setup_ready">Ready to translate</string>
+    <string name="setup_warming_engine">Warming translator…</string>
     <string name="setup_voice_models_title">Voice models</string>
     <string name="setup_voice_models_subtitle">Download speech-to-text and text-to-speech data for English and Spanish. You can also download these automatically on first use.</string>
     <string name="setup_download_all">Download all</string>

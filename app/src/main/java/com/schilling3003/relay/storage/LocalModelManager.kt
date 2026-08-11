@@ -3,6 +3,7 @@ package com.schilling3003.relay.storage
 import android.content.Context
 import android.net.Uri
 import android.os.StatFs
+import android.provider.OpenableColumns
 import com.schilling3003.relay.domain.ImportResult
 import com.schilling3003.relay.domain.ModelError
 import com.schilling3003.relay.domain.ModelState
@@ -14,7 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.security.MessageDigest
 
 /**
  * Production model manager that copies the user-supplied `.litertlm` file into
@@ -32,7 +32,7 @@ class LocalModelManager(
     override val state: StateFlow<ModelState> = _state
 
     init {
-        if (modelFile.exists()) {
+        if (modelFile.exists() && _state.value is ModelState.Missing) {
             _state.value = ModelState.Ready(
                 path = modelFile.absolutePath,
                 modelId = inferModelId(modelFile),
@@ -44,18 +44,23 @@ class LocalModelManager(
     override suspend fun import(uri: Uri): ImportResult = withContext(Dispatchers.IO) {
         try {
             val resolver = context.contentResolver
-            val type = resolver.getType(uri)
+            val displayName = resolver.queryDisplayName(uri)
+            if (displayName != null && !displayName.endsWith(EXTENSION, ignoreCase = true)) {
+                return@withContext fail(ModelError.Incompatible("File must end with $EXTENSION"))
+            }
+
             val size = resolver.openFileDescriptor(uri, "r")?.statSize ?: -1L
             if (size == -1L) {
-                return@withContext ImportResult.Failure(ModelError.CopyFailed("Cannot read source file"))
+                return@withContext fail(ModelError.CopyFailed("Cannot read source file"))
             }
             if (size > freeBytes()) {
-                return@withContext ImportResult.Failure(ModelError.Storage())
+                return@withContext fail(ModelError.Storage())
             }
 
             _state.value = ModelState.Importing(bytesCopied = 0, totalBytes = size, stage = "Copying model…")
 
-            val temp = File(modelDir, "${MODEL_FILENAME}.tmp")
+            val temp = File(modelDir, TEMP_FILENAME)
+            temp.delete()
             resolver.openInputStream(uri)?.use { input ->
                 temp.outputStream().use { output ->
                     val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -73,18 +78,31 @@ class LocalModelManager(
                         }
                     }
                 }
-            } ?: return@withContext ImportResult.Failure(ModelError.CopyFailed("Could not open source file"))
+            } ?: return@withContext fail(ModelError.CopyFailed("Could not open source file"))
 
             _state.value = ModelState.Validating()
             val validation = validateFile(temp)
             if (validation is ValidationResult.Invalid) {
                 temp.delete()
-                return@withContext ImportResult.Failure(validation.error)
+                return@withContext fail(validation.error)
+            }
+
+            if (modelFile.exists() && !modelFile.delete()) {
+                temp.delete()
+                return@withContext fail(ModelError.CopyFailed("Could not remove existing model"))
             }
 
             if (!temp.renameTo(modelFile)) {
+                // Fallback: copy temp to destination, then delete temp.
+                temp.inputStream().use { input ->
+                    modelFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
                 temp.delete()
-                return@withContext ImportResult.Failure(ModelError.CopyFailed())
+                if (!modelFile.exists()) {
+                    return@withContext fail(ModelError.CopyFailed())
+                }
             }
 
             _state.value = ModelState.Ready(
@@ -94,7 +112,11 @@ class LocalModelManager(
             )
             ImportResult.Success(_state.value as ModelState.Ready)
         } catch (e: IOException) {
-            ImportResult.Failure(ModelError.CopyFailed(e.localizedMessage ?: "Import failed"))
+            fail(ModelError.CopyFailed(e.localizedMessage ?: "Import failed"))
+        } catch (e: SecurityException) {
+            fail(ModelError.CopyFailed("Permission denied: ${e.localizedMessage}"))
+        } catch (e: OutOfMemoryError) {
+            fail(ModelError.CopyFailed("Out of memory during import"))
         }
     }
 
@@ -120,9 +142,6 @@ class LocalModelManager(
         if (!file.exists() || file.length() == 0L) {
             return ValidationResult.Invalid(ModelError.Corrupt())
         }
-        if (!file.name.endsWith(EXTENSION, ignoreCase = true)) {
-            return ValidationResult.Invalid(ModelError.Incompatible("File must end with $EXTENSION"))
-        }
         return ValidationResult.Valid
     }
 
@@ -134,8 +153,26 @@ class LocalModelManager(
     private fun inferModelId(file: File): String? =
         file.nameWithoutExtension.takeIf { it.isNotBlank() }
 
+    private fun fail(error: ModelError): ImportResult {
+        _state.value = ModelState.Error(reason = error)
+        return ImportResult.Failure(error)
+    }
+
+    private fun android.content.ContentResolver.queryDisplayName(uri: Uri): String? {
+        query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index != -1) {
+                    return cursor.getString(index)
+                }
+            }
+        }
+        return uri.path?.substringAfterLast('/')
+    }
+
     companion object {
         const val EXTENSION = ".litertlm"
         const val MODEL_FILENAME = "gemma.litertlm"
+        const val TEMP_FILENAME = "gemma.litertlm.tmp"
     }
 }
