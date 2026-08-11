@@ -55,8 +55,6 @@ shown.
   but not yet wired to the UI; the first vertical slice uses deterministic fakes.
 - No on-device STT/TTS/translation yet.
 - Release signing config and arm64 release APK are future gauntlet steps.
-- Screenshot, RTL, large-text, and accessibility tests are partially implemented
-  but not yet executed on a physical device.
 
 ## Next steps
 

@@ -42,7 +42,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | Build | In progress / passes debug | `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleDebug` all green on this session | Release build and APK signing config; emulator/physical device runs |
 | Offline | Not run | — | Real engines + model import on a device |
 | Privacy | Reviewed | Manifest has only `RECORD_AUDIO`; no Internet permission, telemetry, analytics, or transcript logging in code | Formal privacy review after real persistence added |
-| Core journey | UI-only with fake engines | All supported languages in `Language`; state machine covers Recording→Transcribing→Translating→Speaking→Ready | Real STT/Gemma/TTS integration and physical-device two-turn test |
+| Core journey | UI-only with fake engines, e2e verified on android-34 x86_64 emulator | All supported languages in `Language`; state machine covers Recording→Transcribing→Translating→Speaking→Ready; default English→Spanish turn, language swap, and tabletop toggle exercised | Real STT/Gemma/TTS integration and physical-device two-turn test |
 | Stability | Partial | Unit tests cover state transitions, cancellation, swap-while-recording, turn accumulation | Soak, lifecycle, rotation, process-death tests on device |
 | Accessibility | Partial | Compose semantics on speak button, role/Button, content descriptions, large-text-safe scrollable layouts | TalkBack script, contrast checker, RTL/device screenshot suite |
 | Correctness | Partial | `LanguageTest` covers direction/script/defaults; `ConversationViewModelTest` covers pipeline | Real translation corpus, parser tests, malformed-output recovery |
@@ -53,7 +53,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 
 | Round | Commit | Focus | Before | After | Evidence | Critic verdict |
 | ---: | --- | --- | ---: | ---: | --- | --- |
-| 1 | (this PR) | Reproducible build, fake-engine UI vertical slice, state-machine tests | 0 | not rated | `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleDebug` green; debug APK produced | pending independent critic review |
+| 1 | (this PR) | Reproducible build, fake-engine UI vertical slice, state-machine tests, emulator e2e fixes | 0 | not rated | Build/lint/unit tests green; debug APK produced; end-to-end emulator run verified default conversation, English→Spanish turn, swap, and tabletop mode after fixing BigSpeakButton press/release and setup routing | passed testing agent; pending independent critic review |
 
 ## Current benchmark summary
 
@@ -83,6 +83,13 @@ No measurements yet. Do not populate targets as if they were measurements.
    dependencies and left them commented in `app/build.gradle.kts` behind stable
    interfaces so the build, UI, and tests can progress. Revisit with a verified
    Kotlin/Compose/LiteRT-LM triple before enabling real inference.
+5. End-to-end emulator test revealed the fake-engine UI was blocked by the setup
+   screen (`FakeModelManager` defaulted to `Missing`) and the speak button
+   long-press/release did not reliably fire `stopRecording` because `Button` +
+   `pointerInput` captured stale `isRecording`/`enabled` snapshots.
+   **Fix:** `FakeModelManager` now defaults to `Ready`; `SetupViewModel` routes to
+   setup only when the model is not `Ready`; `BigSpeakButton` uses `Surface` +
+   `rememberUpdatedState` + `tryAwaitRelease()` so current callbacks fire.
 
 ## Round template
 
