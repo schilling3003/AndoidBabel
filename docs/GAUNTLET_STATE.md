@@ -5,18 +5,20 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 
 ## Current status
 
-- Phase: Round 2 in progress — real engine adapters wired, build/lint/unit tests green, emulator smoke test passed, unsigned arm64 release APK builds
-- Commit under evaluation: latest on `devin/round1-scaffold-ui`
+- Phase: Round 3 in progress — model download UI added, official STT/TTS/Gemma links verified, debug-signed arm64 release APK rebuilt
+- Commit under evaluation: `b256639` on `devin/round1-scaffold-ui`
 - Overall evidence-backed score: not rated / 100 (real engines compile and launch
   on an x86_64 emulator; release APK compiles for arm64, but no physical-device
   or model-asset measurements yet)
-- Release gates: Build and launch smoke-test gates pass with real engine artifacts;
-  remaining gates blocked by missing model assets and physical reference device
+- Release gates: Build and launch smoke-test gates pass; model-download UI compiles
+  and links verified; remaining gates blocked by physical reference device and
+  `.litertlm` import
 - Physical reference device: not selected
 - Current highest-impact gap: end-to-end English ↔ Spanish vertical slice with real
-  STT/Gemma/TTS on a physical device, requiring `.litertlm` and Moonshine model files
-- Next action: user runs `docs/BENCHMARK_CHECKLIST.md` on a physical device and
-  returns benchmark JSON + logcat; otherwise mark gate `BLOCKED — PHYSICAL DEVICE + MODEL ASSETS REQUIRED`
+  STT/Gemma/TTS on a physical device, requiring `.litertlm` import
+- Next action: install the new debug-signed `app-release.apk`, import the `.litertlm`
+  model, use the in-app voice-model download UI (or let the app download on first
+  use), run `docs/BENCHMARK_CHECKLIST.md`, and return `relay_benchmark_latest.json` + logcat
 - Environment: Android SDK command-line tools installed at `/home/ubuntu/Android/Sdk`
   (build-tools 34.0.0, platform 34, emulator, x86_64 system image). AVD and physical
   device tests are later steps.
@@ -58,6 +60,7 @@ accepted round. Preserve failed attempts; do not rewrite history to look clean.
 | ---: | --- | --- | ---: | ---: | --- | --- |
 | 1 | (this PR) | Reproducible build, fake-engine UI vertical slice, state-machine tests, emulator e2e fixes | 0 | not rated | Build/lint/unit tests green; debug APK produced; end-to-end emulator run verified default conversation, English→Spanish turn, swap, and tabletop mode after fixing BigSpeakButton press/release and setup routing | passed testing agent; pending independent critic review |
 | 2 | (this PR) | Real LiteRT-LM/Moonshine engine integration, emulator smoke test, release build, and benchmark export | not rated | not rated | Kotlin 2.3.0/Compose compiler 2.3.0 resolve metadata mismatch; `GemmaTranslationEngine`, `MoonshineSpeechRecognizer`, `MoonshineSpeechSynthesizer`, `AudioTrackAudioPlayer`, `RealAudioRecorder`, `FilePerformanceRecorder` wired; build/lint/unit tests green; smoke test on `android-34` x86_64 emulator passes; `./gradlew :app:assembleRelease` produces unsigned `arm64-v8a` APK; `docs/BENCHMARK_CHECKLIST.md` and `tools/extract_benchmark.py` ready for user self-test | compiled and launched; end-to-end English ↔ Spanish still blocked by missing model assets and physical device |
+| 3 | (this PR) | Verify model download links and add in-app Moonshine STT/TTS downloader | not rated | not rated | All Gemma and Moonshine STT/TTS file URLs verified with GET + User-Agent; `MoonshineDownloadWorker`/`WorkManager` download UI added to setup screen with per-language progress and download-all; `MoonshineSpeechRecognizer` passes matching `modelArch` to `ModelSpec.stt`; `MoonshineSpeechSynthesizer` uses per-language voices (Kokoro `af_heart`, `ef_dora`, `jf_alpha`, `zf_xiaobei`; Piper `ar_JO-kareem-medium`, `ko_KR-melotts-medium`); `INTERNET` permission added; `./gradlew :app:compileDebugKotlin :app:lintDebug :app:testDebugUnitTest :app:assembleRelease` green; `app-release.apk` debug-signed and `apksigner verify` passes; emulator smoke test attempted but blocked by missing KVM permissions in this VM | compiled and signed; end-to-end physical-device test blocked |
 
 ## Current benchmark summary
 
