@@ -93,9 +93,9 @@ adb -s emulator-5554 push /tmp/fake.litertlm /sdcard/Download/fake.litertlm
 4. Use **Skip — download later** to reach the conversation screen.
 5. Open **Settings** from the setup `More languages & voices` link or from the conversation top-bar gear icon.
 6. In Settings:
-   - Verify the source (`I speak`) and target (`They speak`) language dropdowns update the selection.
-   - Scroll to **Voice models** and confirm all 6 supported languages × 2 model types (STT + TTS) = 12 rows appear.
-   - Toggle **Tabletop mode** on/off and confirm the conversation screen splits into two side-by-side speaker zones without a central menu.
+   - Verify the source (`I speak`) dropdown only lists STT languages (English, Arabic, Spanish, Japanese, Mandarin, Korean, Vietnamese, Ukrainian) and the target (`They speak`) dropdown lists all 16 TTS languages.
+   - Scroll to **Voice models** and confirm 16 language groups with the correct STT and/or TTS rows: 8 STT + 16 TTS = 24 rows total. TTS-only languages (German, French, Hindi, Italian, Dutch, Portuguese, Russian, Turkish) show only a `text-to-speech` row.
+   - Toggle **Tabletop mode** on/off and confirm the conversation screen splits into two side-by-side speaker zones without a central menu. A TTS-only target zone should display `Listening not supported` and be disabled.
 7. Check `adb logcat` for `FATAL EXCEPTION`, `AndroidRuntime`, or `com.schilling3003.relay` crashes.
 
 ## Known emulator gotchas
