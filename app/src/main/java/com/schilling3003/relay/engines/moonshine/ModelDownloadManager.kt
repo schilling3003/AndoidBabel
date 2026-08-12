@@ -18,6 +18,9 @@ import java.util.UUID
  * [MoonshineDownloadWorker] the library provides. The download manager is
  * intentionally separate from the speech engines so the setup UI can show status
  * and progress before the first conversation turn.
+ *
+ * Not every language has both STT and TTS support in the current moonshine-voice
+ * AAR, so specs are generated only for the capabilities a language declares.
  */
 class ModelDownloadManager(private val context: Context) {
 
@@ -47,16 +50,13 @@ class ModelDownloadManager(private val context: Context) {
     fun requiredSpecs(source: Language, target: Language): List<DownloadSpec> {
         val languages = listOf(source, target).distinct()
         return languages.flatMap { language ->
-            listOf(
-                sttSpec(language),
-                ttsSpec(language)
-            )
+            specsFor(language)
         }
     }
 
     fun allSpecs(): List<DownloadSpec> =
         Language.entries.flatMap { language ->
-            listOf(sttSpec(language), ttsSpec(language))
+            specsFor(language)
         }
 
     fun isPresent(spec: DownloadSpec): Boolean =
@@ -71,6 +71,11 @@ class ModelDownloadManager(private val context: Context) {
 
     fun workInfo(workId: UUID): LiveData<WorkInfo> =
         workManager.getWorkInfoByIdLiveData(workId)
+
+    private fun specsFor(language: Language): List<DownloadSpec> = buildList {
+        if (language.supportsStt) add(sttSpec(language))
+        if (language.supportsTts) add(ttsSpec(language))
+    }
 
     private fun sttSpec(language: Language): DownloadSpec {
         val code = language.code
@@ -103,8 +108,7 @@ class ModelDownloadManager(private val context: Context) {
     companion object {
         /**
          * Language-specific default voice. Kokoro voices are used where available;
-         * Arabic and Korean fall back to Piper voices because the moonshine-voice
-         * 0.1.1 AAR does not ship Kokoro voices for those languages.
+         * non-Kokoro languages fall back to Piper voices.
          */
         fun defaultVoice(language: Language): String = when (language) {
             Language.ENGLISH -> "kokoro_af_heart"
@@ -113,6 +117,18 @@ class ModelDownloadManager(private val context: Context) {
             Language.MANDARIN -> "kokoro_zf_xiaobei"
             Language.ARABIC -> "piper_ar_JO-kareem-medium"
             Language.KOREAN -> "piper_ko_KR-melotts-medium"
+
+            Language.VIETNAMESE -> "piper_vi_VN-vais1000-medium"
+            Language.UKRAINIAN -> "piper_uk_UA-ukrainian_tts-medium"
+
+            Language.GERMAN -> "piper_de_DE-thorsten-medium"
+            Language.FRENCH -> "piper_fr_FR-siwis-medium"
+            Language.HINDI -> "kokoro_hf_alpha"
+            Language.ITALIAN -> "piper_it_IT-paola-medium"
+            Language.DUTCH -> "piper_nl_NL-mls-medium"
+            Language.PORTUGUESE -> "kokoro_pf_dora"
+            Language.RUSSIAN -> "piper_ru_RU-irina-medium"
+            Language.TURKISH -> "piper_tr_TR-dfki-medium"
         }
 
         fun defaultSttModelArch(language: Language): Int = when (language) {

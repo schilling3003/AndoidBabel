@@ -13,7 +13,7 @@
     <string name="setup_ready">Ready to translate</string>
     <string name="setup_warming_engine">Warming translator…</string>
     <string name="setup_voice_models_title">Voice models</string>
-    <string name="setup_voice_models_subtitle">Download speech-to-text and text-to-speech data for English and Spanish. You can also download these automatically on first use.</string>
+    <string name="setup_voice_models_subtitle">Download speech-to-text and text-to-speech data for the selected languages. Remaining models can also be downloaded automatically on first use.</string>
     <string name="setup_download_all">Download all</string>
     <string name="setup_download">Download</string>
     <string name="setup_refresh">Refresh</string>
@@ -32,6 +32,7 @@
     <string name="conversation_swap_languages">Swap languages</string>
     <string name="conversation_hold_to_speak">Hold to speak</string>
     <string name="conversation_release_to_send">Release to send</string>
+    <string name="conversation_listening_not_supported">Listening not supported</string>
     <string name="conversation_recording">Listening…</string>
     <string name="conversation_transcribing">Transcribing…</string>
     <string name="conversation_translating">Translating…</string>

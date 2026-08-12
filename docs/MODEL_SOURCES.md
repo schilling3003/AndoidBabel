@@ -35,6 +35,8 @@ under `moonshine/stt/<language>/` in the app's private storage.
 | Japanese (base) | 1 | `encoder_model.ort` (31.3 MB)<br>`decoder_model_merged.ort` (109 MB)<br>`tokenizer.bin` (0.25 MB) | ~141 MB |
 | Korean (tiny) | 0 | `encoder_model.ort` (13.2 MB)<br>`decoder_model_merged.ort` (58.3 MB)<br>`tokenizer.bin` (0.25 MB) | ~72 MB |
 | Mandarin (base) | 1 | `encoder_model.ort` (31.3 MB)<br>`decoder_model_merged.ort` (109 MB)<br>`tokenizer.bin` (0.25 MB) | ~141 MB |
+| Vietnamese (base) | 1 | `encoder_model.ort` (31.3 MB)<br>`decoder_model_merged.ort` (109 MB)<br>`tokenizer.bin` (0.25 MB) | ~141 MB |
+| Ukrainian (base) | 1 | `encoder_model.ort` (31.3 MB)<br>`decoder_model_merged.ort` (109 MB)<br>`tokenizer.bin` (0.25 MB) | ~141 MB |
 
 Base URLs for the full file URLs below:
 
@@ -44,13 +46,36 @@ Base URLs for the full file URLs below:
 - Japanese base: `https://download.moonshine.ai/model/base-ja/quantized/base-ja/`
 - Korean tiny: `https://download.moonshine.ai/model/tiny-ko/quantized/tiny-ko/`
 - Mandarin base: `https://download.moonshine.ai/model/base-zh/quantized/base-zh/`
+- Vietnamese base: `https://download.moonshine.ai/model/base-vi/quantized/base-vi/`
+- Ukrainian base: `https://download.moonshine.ai/model/base-uk/quantized/base-uk/`
 
 ## Moonshine TTS models
 
 TTS assets are downloaded under `moonshine/tts/<language>/` in the app's private
-storage. Kokoro voices are used for English, Spanish, Japanese, and Mandarin.
-Arabic and Korean fall back to Piper voices because the moonshine-voice 0.1.1 AAR
-does not ship Kokoro voices for those languages.
+storage. Kokoro voices are used for English, Spanish, Japanese, Mandarin, Hindi,
+and Portuguese; other languages use Piper voices. The app passes the voice ID to
+`ModelSpec.tts` and `AssetDownloader` resolves the exact file URLs from the
+Moonshine CDN. The table below lists the default voice for each supported
+language so sideloading can mirror the in-app downloader.
+
+| Language | STT | TTS default voice |
+| --- | --- | --- |
+| English (`en`) | yes | `kokoro_af_heart` |
+| Spanish (`es`) | yes | `kokoro_ef_dora` |
+| Arabic (`ar`) | yes | `piper_ar_JO-kareem-medium` |
+| Japanese (`ja`) | yes | `kokoro_jf_alpha` |
+| Mandarin (`zh`) | yes | `kokoro_zf_xiaobei` |
+| Korean (`ko`) | yes | `piper_ko_KR-melotts-medium` |
+| Vietnamese (`vi`) | yes | `piper_vi_VN-vais1000-medium` |
+| Ukrainian (`uk`) | yes | `piper_uk_UA-ukrainian_tts-medium` |
+| German (`de`) | no | `piper_de_DE-thorsten-medium` |
+| French (`fr`) | no | `piper_fr_FR-siwis-medium` |
+| Hindi (`hi`) | no | `kokoro_hf_alpha` |
+| Italian (`it`) | no | `piper_it_IT-paola-medium` |
+| Dutch (`nl`) | no | `piper_nl_NL-mls-medium` |
+| Portuguese (`pt`) | no | `kokoro_pf_dora` |
+| Russian (`ru`) | no | `piper_ru_RU-irina-medium` |
+| Turkish (`tr`) | no | `piper_tr_TR-dfki-medium` |
 
 ### English (`en`) — Kokoro `af_heart`
 

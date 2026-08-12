@@ -55,5 +55,8 @@ class FakeSpeechRecognizer(
         Language.JAPANESE -> "最寄りの病院はどこですか？"
         Language.MANDARIN -> "最近的医院在哪里？"
         Language.KOREAN -> "가장 가까운 병원이 어디예요?"
+        Language.VIETNAMESE -> "Bệnh viện gần nhất ở đâu?"
+        Language.UKRAINIAN -> "Де найближча лікарня?"
+        else -> "Where is the nearest hospital?"
     }
 }

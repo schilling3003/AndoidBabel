@@ -126,7 +126,7 @@ class ConversationViewModel(
     }
 
     fun startRecordingIn(language: Language) {
-        if (_state.value.isProcessing) return
+        if (_state.value.isProcessing || !language.supportsStt) return
         val other = if (language == _preferredSource.value) _preferredTarget.value else _preferredSource.value
         _sourceLanguage.value = language
         _targetLanguage.value = other

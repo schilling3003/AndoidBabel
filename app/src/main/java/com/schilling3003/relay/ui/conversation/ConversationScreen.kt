@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Splitscreen
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -92,6 +93,7 @@ fun ConversationScreen(
                     onSwap = { viewModel.swapLanguages() },
                     onCancel = { viewModel.cancel() },
                     onReplay = { viewModel.replayLast() },
+                    onToggleTabletop = { viewModel.toggleTabletopMode() },
                     onSettings = onSettings,
                     scrollBehavior = scrollBehavior
                 )
@@ -142,6 +144,7 @@ private fun RelayTopBar(
     onSwap: () -> Unit,
     onCancel: () -> Unit,
     onReplay: () -> Unit,
+    onToggleTabletop: () -> Unit,
     onSettings: () -> Unit,
     scrollBehavior: androidx.compose.material3.TopAppBarScrollBehavior
 ) {
@@ -192,6 +195,12 @@ private fun RelayTopBar(
                         contentDescription = stringResource(R.string.conversation_cancel)
                     )
                 }
+            }
+            IconButton(onClick = onToggleTabletop) {
+                Icon(
+                    imageVector = Icons.Filled.Splitscreen,
+                    contentDescription = stringResource(R.string.conversation_tabletop_mode)
+                )
             }
             IconButton(onClick = onSettings) {
                 Icon(
@@ -455,12 +464,13 @@ private fun BigSpeakButton(
     onRelease: () -> Unit
 ) {
     val isRecording = state is ConversationState.Recording && state.sourceLanguage == source
-    val label = when (state) {
-        is ConversationState.Recording -> stringResource(R.string.conversation_release_to_send)
+    val label = when {
+        !source.supportsStt -> stringResource(R.string.conversation_listening_not_supported)
+        isRecording -> stringResource(R.string.conversation_release_to_send)
         else -> stringResource(R.string.conversation_hold_to_speak)
     }
     val a11y = stringResource(R.string.a11y_speak_button, source.displayName)
-    val enabled = (state is ConversationState.Ready || state is ConversationState.Recording) && permissionGranted
+    val enabled = source.supportsStt && (state is ConversationState.Ready || state is ConversationState.Recording) && permissionGranted
 
     val currentEnabled by rememberUpdatedState(enabled)
     val currentOnPress by rememberUpdatedState(onPress)

@@ -195,6 +195,7 @@ private fun LanguageSection(
             selected = source,
             onSelected = onSourceSelected,
             exclude = target,
+            filter = { it.supportsStt },
             modifier = Modifier.fillMaxWidth()
         )
         LanguageDropdown(
@@ -202,6 +203,7 @@ private fun LanguageSection(
             selected = target,
             onSelected = onTargetSelected,
             exclude = source,
+            filter = { it.supportsTts },
             modifier = Modifier.fillMaxWidth()
         )
     }

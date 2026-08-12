@@ -22,7 +22,8 @@ fun LanguageDropdown(
     selected: Language,
     onSelected: (Language) -> Unit,
     modifier: Modifier = Modifier,
-    exclude: Language? = null
+    exclude: Language? = null,
+    filter: (Language) -> Boolean = { true }
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -44,7 +45,7 @@ fun LanguageDropdown(
             onDismissRequest = { expanded = false }
         ) {
             Language.entries.forEach { language ->
-                if (language == exclude) return@forEach
+                if (language == exclude || !filter(language)) return@forEach
                 DropdownMenuItem(
                     text = { Text(language.displayLabel()) },
                     onClick = {
