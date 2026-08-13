@@ -1,0 +1,29 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+captures
+.externalNativeBuild
+.cxx
+local.properties
+# Model assets and voice files are never committed.
+*.litertlm
+*.onnx
+*.bin
+*.wav
+*.mp3
+*.ogg
+# Keystore / signing
+*.jks
+*.keystore
+key.properties
+.kotlin/
+build/
+.gradle/

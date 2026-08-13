@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Relay</string>
+
+    <!-- Setup screen -->
+    <string name="setup_title">Set up Relay</string>
+    <string name="setup_model_missing">A Gemma translation model is needed before you can translate offline.</string>
+    <string name="setup_model_ready">Translation model ready.</string>
+    <string name="setup_import_model">Import .litertlm model</string>
+    <string name="setup_model_requirements">Requires ~6 GB free storage. The model file is not included with the app.</string>
+    <string name="setup_select_languages">Choose languages</string>
+    <string name="setup_warm_engines">Preparing translator…</string>
+    <string name="setup_ready">Ready to translate</string>
+    <string name="setup_warming_engine">Warming translator…</string>
+    <string name="setup_voice_models_title">Voice models</string>
+    <string name="setup_voice_models_subtitle">Download speech-to-text and text-to-speech data for the selected languages. Remaining models can also be downloaded automatically on first use.</string>
+    <string name="setup_download_all">Download all</string>
+    <string name="setup_download">Download</string>
+    <string name="setup_refresh">Refresh</string>
+    <string name="setup_downloaded">Downloaded</string>
+    <string name="setup_downloading">Downloading…</string>
+    <string name="setup_pending">Pending</string>
+    <string name="setup_error">Error</string>
+    <string name="setup_skip_downloads">Skip — download later</string>
+    <string name="setup_error_incompatible_model">The selected file is not a compatible .litertlm model.</string>
+    <string name="setup_error_storage">Not enough free storage to copy the model.</string>
+    <string name="setup_error_copy">Could not copy the model. Keep the original file and try again.</string>
+
+    <!-- Conversation screen -->
+    <string name="conversation_source_language">Speaking:</string>
+    <string name="conversation_target_language">Translating to:</string>
+    <string name="conversation_swap_languages">Swap languages</string>
+    <string name="conversation_hold_to_speak">Hold to speak</string>
+    <string name="conversation_release_to_send">Release to send</string>
+    <string name="conversation_listening_not_supported">Listening not supported</string>
+    <string name="conversation_recording">Listening…</string>
+    <string name="conversation_transcribing">Transcribing…</string>
+    <string name="conversation_translating">Translating…</string>
+    <string name="conversation_speaking">Speaking translation…</string>
+    <string name="conversation_done">Done</string>
+    <string name="conversation_stop">Stop</string>
+    <string name="conversation_replay">Replay</string>
+    <string name="conversation_retry">Retry</string>
+    <string name="conversation_edit">Edit</string>
+    <string name="conversation_cancel">Cancel</string>
+    <string name="conversation_microphone_permission_rationale">Relay needs microphone access to hear speech.</string>
+    <string name="conversation_open_settings">Open settings</string>
+    <string name="conversation_try_again">Try again</string>
+    <string name="conversation_missing_language_asset">Language voice data is missing. Add it in Settings.</string>
+    <string name="conversation_tabletop_mode">Tabletop mode</string>
+    <string name="conversation_portrait_mode">Portrait mode</string>
+
+    <!-- Accessibility -->
+    <string name="a11y_speak_button">Speak in %1$s</string>
+    <string name="a11y_language_selector">Select %1$s language, currently %2$s</string>
+    <string name="a11y_swap_languages">Swap source and target languages</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_back">Back</string>
+    <string name="settings_remove_model">Remove model</string>
+    <string name="settings_privacy_title">Privacy</string>
+    <string name="settings_privacy_body">All speech, text, and translation stay on this device. Relay does not send data to servers. The model and voice files are stored locally.</string>
+    <string name="settings_history">Keep conversation history</string>
+    <string name="settings_erase_history">Erase history</string>
+    <string name="settings_languages">Languages</string>
+    <string name="settings_source_language">I speak</string>
+    <string name="settings_target_language">They speak</string>
+    <string name="settings_tabletop_title">Tabletop mode</string>
+    <string name="settings_tabletop_subtitle">Show two speak buttons side-by-side for face-to-face conversation.</string>
+    <string name="settings_all_languages_title">Voice models</string>
+    <string name="settings_all_languages_subtitle">Download speech-to-text and text-to-speech data for every supported language.</string>
+    <string name="settings_download_all_languages">Download all languages</string>
+    <string name="setup_more_languages">More languages &amp; voices</string>
+</resources>
